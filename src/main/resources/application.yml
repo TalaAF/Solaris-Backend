@@ -1,6 +1,11 @@
 spring:
   profiles:
     active: local
+    spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/lms_db
+    username: postgres
+    password: MST
   jpa:
     hibernate:
       ddl-auto: update
