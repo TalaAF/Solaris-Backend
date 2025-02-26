@@ -6,7 +6,6 @@ import lombok.*;
 
 import java.util.HashSet;
 import java.util.Set;
-
 @Entity
 @Getter
 @Setter
@@ -36,4 +35,13 @@ public class Course {
         inverseJoinColumns = @JoinColumn(name = "student_id")
     )
     private Set<User> students = new HashSet<>();
+
+    // Adding the missing methods for title
+    public String getTitle() {
+        return this.name;  // Return the name as the title
+    }
+
+    public void setTitle(String title) {
+        this.name = title;  // Set the name as the title
+    }
 }

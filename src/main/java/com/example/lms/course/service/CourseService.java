@@ -1,6 +1,7 @@
 package com.example.lms.course.service;
 
 import com.example.lms.course.dto.CourseDTO;
+import com.example.lms.course.mapper.CourseMapper;
 import com.example.lms.course.model.Course;
 import com.example.lms.course.repository.CourseRepository;
 import com.example.lms.user.model.User;
@@ -20,69 +21,75 @@ public class CourseService {
     @Autowired
     private UserRepository userRepository;
 
-    // Create a new course
+    // Method to delete a course
+    public void deleteCourse(Long id) {
+        courseRepository.deleteById(id);
+    }
+
+    // Method to create a new course
     public CourseDTO createCourse(CourseDTO courseDTO) {
-       
+        // Validate the fields of courseDTO
+        if (courseDTO.getTitle() == null || courseDTO.getTitle().isEmpty()) {
+            throw new IllegalArgumentException("Title cannot be empty");
+        }
+        if (courseDTO.getDescription() == null || courseDTO.getDescription().isEmpty()) {
+            throw new IllegalArgumentException("Description cannot be empty");
+        }
+        if (courseDTO.getInstructorEmail() == null || courseDTO.getInstructorEmail().isEmpty()) {
+            throw new IllegalArgumentException("Instructor email cannot be empty");
+        }
+
         User instructor = userRepository.findByEmail(courseDTO.getInstructorEmail())
                 .orElseThrow(() -> new ResourceNotFoundException("Instructor not found"));
 
-        // Create and set course details
-        Course course = new Course();
-        course.setName(courseDTO.getTitle()); // Set course title
-        course.setDescription(courseDTO.getDescription()); // Set course description
-        course.setInstructor(instructor); // Set instructor
-
-        // Save the course and return the CourseDTO
+        Course course = CourseMapper.toEntity(courseDTO, instructor);
         Course savedCourse = courseRepository.save(course);
-        return new CourseDTO(savedCourse.getId(), savedCourse.getName(), savedCourse.getDescription(), instructor.getEmail());
+        return CourseMapper.toDTO(savedCourse);
     }
 
-    // Get a course by its ID
-    public CourseDTO getCourseById(Long id) {
-        // Find the course by ID
-        Course course = courseRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Course not found with id: " + id));
-
-        // Return the course details as a DTO
-        return new CourseDTO(course.getId(), course.getName(), course.getDescription(), course.getInstructor().getEmail());
-    }
-
-    // Get all courses
-    public List<CourseDTO> getAllCourses() {
-        List<Course> courses = courseRepository.findAll();
-
-        // Convert the list of courses to CourseDTOs
-        return courses.stream()
-                .map(course -> new CourseDTO(course.getId(), course.getName(), course.getDescription(), course.getInstructor().getEmail()))
-                .collect(Collectors.toList());
-    }
-
-    // Update an existing course
+    // Method to update a course
     public CourseDTO updateCourse(Long id, CourseDTO courseDTO) {
-        // Find the course by ID
+        // Validate the fields of courseDTO
+        if (courseDTO.getTitle() == null || courseDTO.getTitle().isEmpty()) {
+            throw new IllegalArgumentException("Title cannot be empty");
+        }
+        if (courseDTO.getDescription() == null || courseDTO.getDescription().isEmpty()) {
+            throw new IllegalArgumentException("Description cannot be empty");
+        }
+        if (courseDTO.getInstructorEmail() == null || courseDTO.getInstructorEmail().isEmpty()) {
+            throw new IllegalArgumentException("Instructor email cannot be empty");
+        }
+
+        // Find the course by id
         Course course = courseRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found with id: " + id));
 
+        // Find the instructor
         User instructor = userRepository.findByEmail(courseDTO.getInstructorEmail())
                 .orElseThrow(() -> new ResourceNotFoundException("Instructor not found"));
 
         // Update the course details
-        course.setName(courseDTO.getTitle());
+        course.setTitle(courseDTO.getTitle());
         course.setDescription(courseDTO.getDescription());
         course.setInstructor(instructor);
 
-        // Save the updated course and return the CourseDTO
+        // Save the updated course
         Course updatedCourse = courseRepository.save(course);
-        return new CourseDTO(updatedCourse.getId(), updatedCourse.getName(), updatedCourse.getDescription(), instructor.getEmail());
+        return CourseMapper.toDTO(updatedCourse);
     }
 
-    // Delete a course by its ID
-    public void deleteCourse(Long id) {
-        // Find the course by ID
+    // Method to get a course by id
+    public CourseDTO getCourseById(Long id) {
         Course course = courseRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found with id: " + id));
+        return CourseMapper.toDTO(course);  // Assuming you have a mapper to convert Course to CourseDTO
+    }
 
-        // Delete the course from the repository
-        courseRepository.delete(course);
+    // Method to get all courses
+    public List<CourseDTO> getAllCourses() {
+        List<Course> courses = courseRepository.findAll();
+        return courses.stream()
+                      .map(CourseMapper::toDTO)  // Assuming you have a mapper to convert Course to CourseDTO
+                      .collect(Collectors.toList());
     }
 }

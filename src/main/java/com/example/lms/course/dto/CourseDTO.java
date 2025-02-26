@@ -1,6 +1,8 @@
 package com.example.lms.course.dto;
 
-public class CourseDTO {
+import org.springframework.hateoas.RepresentationModel;
+
+public class CourseDTO extends RepresentationModel<CourseDTO> {
     private Long id;
     private String title;
     private String description;
@@ -25,5 +27,5 @@ public class CourseDTO {
     public void setDescription(String description) { this.description = description; }
 
     public String getInstructorEmail() { return instructorEmail; } 
-    public void setInstructorEmail(String instructorEmail) { this.instructorEmail = instructorEmail; }  // Corrected setter
+    public void setInstructorEmail(String instructorEmail) { this.instructorEmail = instructorEmail; }
 }
