@@ -8,9 +8,9 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
-@Repository  // Marks this as a Spring Data repository
+@Repository("userUserRepository")
 public interface UserRepository extends JpaRepository<User, Long> {
-    // Custom method to find a user by their email address
+  
     Optional<User> findByEmail(String email);
     
     // Custom method to check if an email is already registered
