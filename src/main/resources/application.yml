@@ -1,6 +1,6 @@
 spring:
   profiles:
-    active: local
+    active: h2   # Change to 'local' to use PostgreSQL
   jpa:
     hibernate:
       ddl-auto: update
@@ -8,6 +8,28 @@ spring:
     properties:
       hibernate:
         format_sql: true
+
+---
+spring:
+  config:
+    activate:
+      on-profile: h2
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: password
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+  jpa:
+    properties:
+      hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
 server:
@@ -19,4 +41,3 @@ logging:
   level:
     org.springframework: INFO
     com.example.lms: DEBUG
-

@@ -16,6 +16,7 @@ import com.example.lms.user.model.Role;
 @Builder                // Lombok: Enables the builder pattern for object creation
 @NoArgsConstructor     // Lombok: Generates a no-args constructor
 @AllArgsConstructor    // Lombok: Generates a constructor with all properties
+@Entity
 public class User extends BaseEntity {
     
     @Column(nullable = false, unique = true)
