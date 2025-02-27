@@ -2,6 +2,7 @@
 package com.example.lms.user.model;
 
 import com.example.lms.common.BaseEntity;
+import com.example.lms.Department.model.Department;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -35,4 +36,8 @@ public class User extends BaseEntity {
     
     @Column(nullable = false)
     private boolean isActive = true;  // Account status flag
+
+    @ManyToOne
+    @JoinColumn(name = "department_id")
+    private Department department;  // Relationship with Department
 }
