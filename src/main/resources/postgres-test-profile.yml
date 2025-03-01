@@ -1,0 +1,23 @@
+# Save this as src/main/resources/application-postgres-test.yml
+
+spring:
+  datasource:
+    url: jdbc:postgresql://sweng.bethlehem.edu:33062/team10
+    username: team10
+    password: nufxxa
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate  # Just validate the schema, don't modify it during testing
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    show-sql: true
+
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    com.zaxxer.hikari: DEBUG  # Show connection pool details
+    org.springframework.jdbc: DEBUG

@@ -1,33 +1,56 @@
 spring:
-  datasource:
-    url: jdbc:h2:file:./data/lmsdb  # Store as a file in ./data directory
-    username: sa
-    password: 
-    driver-class-name: org.h2.Driver
-  jpa:
+  profiles:
+    active: local  # Default to local for development off-campus
+  jpa:             # command for using localdatabase: mvn spring-boot:run -Dspring-boot.run.profiles=local
     hibernate:
-      ddl-auto: update  # Keep this as "update" to preserve schema
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
         format_sql: true
-        dialect: org.hibernate.dialect.H2Dialect
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
-      
+
 server:
   port: 8080
-  # Remove the context-path setting to use the root path "/"
+  servlet:
+    context-path: /api/v1
 
 logging:
   level:
     org.springframework: INFO
     com.example.lms: DEBUG
-    org.hibernate.SQL: DEBUG
-    io.jsonwebtoken: DEBUG
 
-# JWT Configuration
-jwt:
-  expiration: 86400000  # 24 hours in milliseconds
+# Local development profile (uses H2 in-memory database)
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+  datasource:
+    url: jdbc:h2:mem:lmsdb
+    username: sa
+    password: 
+    driver-class-name: org.h2.Driver
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+# University database profile (uses PostgreSQL)
+---
+spring:
+  config:
+    activate:
+      on-profile: university            # command for using university database: mvn spring-boot:run -Dspring-boot.run.profiles=university   
+  datasource:
+    url: jdbc:postgresql://sweng.bethlehem.edu:33062/team10
+    username: team10
+    password: nufxxa
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect

@@ -4,7 +4,8 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 src/main/resources/application-local.yml
-
+src/main/resources/application-postgres-test.yml
+src/main/resources/application-university.yml
 
 ### STS ###
 .apt_generated
