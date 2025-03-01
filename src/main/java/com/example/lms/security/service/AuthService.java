@@ -9,8 +9,12 @@ import com.example.lms.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -34,43 +38,57 @@ public class AuthService {
      */
     @Transactional
     public AuthResponse login(LoginRequest loginRequest) {
-        log.debug("Processing login for user: {}", loginRequest.getEmail());
+        log.info("Attempting login for: {}", loginRequest.getEmail());
         
-        // Authenticate the user
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        loginRequest.getEmail(),
-                        loginRequest.getPassword()
-                )
-        );
+        try {
+            // First check if user exists and is active
+            User user = userRepository.findByEmail(loginRequest.getEmail())
+                    .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
+            
+            if (!user.isActive()) {
+                log.warn("Login attempt for inactive account: {}", loginRequest.getEmail());
+                throw new DisabledException("User account is locked");
+            }
+            
+            // Authenticate the user
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            loginRequest.getEmail(),
+                            loginRequest.getPassword()
+                    )
+            );
 
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-        
-        // Generate JWT token
-        log.debug("Generating JWT token for authenticated user: {}", loginRequest.getEmail());
-        String jwt = tokenProvider.generateToken(authentication);
-        
-        User user = userRepository.findByEmail(loginRequest.getEmail()).orElseThrow();
-        
-        log.debug("Login successful, returning auth response");
-        return new AuthResponse(jwt, user.getId(), user.getEmail(), user.getRole().name());
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            String jwt = tokenProvider.generateToken(authentication);
+            
+            log.info("Login successful for user: {}", loginRequest.getEmail());
+            return new AuthResponse(jwt, user.getId(), user.getEmail(), user.getRole().name());
+            
+        } catch (DisabledException e) {
+            log.warn("Login attempt for disabled account: {}", loginRequest.getEmail());
+            throw new DisabledException("User account is locked");
+        } catch (LockedException e) {
+            log.warn("Login attempt for locked account: {}", loginRequest.getEmail());
+            throw new LockedException("User account is locked");
+        } catch (BadCredentialsException e) {
+            log.warn("Invalid credentials for: {}", loginRequest.getEmail());
+            throw new BadCredentialsException("Invalid credentials");
+        } catch (AuthenticationException e) {
+            log.error("Authentication error: {}", e.getMessage());
+            throw new BadCredentialsException("Authentication failed");
+        }
     }
 
-    /**
-     * Registers a new user and authenticates them
-     */
+    // Register method unchanged
     @Transactional
     public AuthResponse register(RegisterRequest registerRequest) {
-        log.debug("Processing registration for user: {}", registerRequest.getEmail());
+        log.info("Attempting registration for: {}", registerRequest.getEmail());
         
-        // Check if email already exists
-        if (userRepository.existsByEmail(registerRequest.getEmail())) {
-            log.warn("Email already taken: {}", registerRequest.getEmail());
+        if(userRepository.existsByEmail(registerRequest.getEmail())) {
             throw new IllegalArgumentException("Email is already taken!");
         }
 
-        // Create new user
-        log.debug("Creating new user with role: {}", registerRequest.getRole());
+        // Create new user with encoded password
         User user = User.builder()
                 .fullName(registerRequest.getFullName())
                 .email(registerRequest.getEmail())
@@ -81,10 +99,9 @@ public class AuthService {
                 .build();
 
         User savedUser = userRepository.save(user);
-        log.debug("User saved successfully with ID: {}", savedUser.getId());
+        log.info("User created with ID: {}", savedUser.getId());
 
-        // Authenticate the user
-        log.debug("Authenticating newly registered user");
+        // Authenticate the new user
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         registerRequest.getEmail(),
@@ -93,12 +110,8 @@ public class AuthService {
         );
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        
-        // Generate JWT token
-        log.debug("Generating JWT token for new user");
         String jwt = tokenProvider.generateToken(authentication);
         
-        log.debug("Registration successful, returning auth response");
         return new AuthResponse(jwt, savedUser.getId(), savedUser.getEmail(), savedUser.getRole().name());
     }
 }

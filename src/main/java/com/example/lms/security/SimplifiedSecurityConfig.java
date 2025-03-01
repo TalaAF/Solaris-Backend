@@ -2,9 +2,13 @@ package com.example.lms.security;
 
 import com.example.lms.security.jwt.JwtAuthenticationFilter;
 import com.example.lms.security.jwt.JwtTokenProvider;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+
+import java.util.Map;
+import java.util.HashMap;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -46,6 +50,20 @@ public class SimplifiedSecurityConfig {
         return authConfig.getAuthenticationManager();
     }
 
+     @Bean
+    public AuthenticationEntryPoint authenticationEntryPoint() {
+        return (request, response, authException) -> {
+            response.setContentType("application/json");
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            
+            Map<String, String> error = new HashMap<>();
+            error.put("message", authException.getMessage());
+            
+            String json = new ObjectMapper().writeValueAsString(error);
+            response.getWriter().write(json);
+        };
+    }
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -72,13 +90,4 @@ public class SimplifiedSecurityConfig {
     }
 
     
-    @Bean
-public AuthenticationEntryPoint authenticationEntryPoint() {
-    return (request, response, authException) -> {
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        response.setContentType("application/json");
-        response.getWriter().write("{\"error\":\"Unauthorized\",\"message\":\"" 
-            + authException.getMessage() + "\"}");
-    };
-}
 }

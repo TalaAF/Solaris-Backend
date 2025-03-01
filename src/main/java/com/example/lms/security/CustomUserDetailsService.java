@@ -3,6 +3,8 @@ package com.example.lms.security;
 import com.example.lms.user.model.User;
 import com.example.lms.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -48,6 +50,9 @@ public class CustomUserDetailsService implements UserDetailsService {
         User user = userRepository.findByEmail(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + username));
 
+                   if (!user.isActive()) {
+        throw new LockedException("User account is locked");
+    }
         // Convert our User entity to Spring Security's UserDetails
         return org.springframework.security.core.userdetails.User
                 .withUsername(user.getEmail())
