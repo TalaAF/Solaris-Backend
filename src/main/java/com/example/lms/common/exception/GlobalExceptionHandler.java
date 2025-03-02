@@ -13,9 +13,8 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -36,6 +35,7 @@ import java.util.Map;
  * This is a critical component for proper API error handling and security.
  */
 @ControllerAdvice // Spring annotation for global exception handling
+@RestControllerAdvice
 public class GlobalExceptionHandler {
 
 
@@ -144,6 +144,7 @@ public class GlobalExceptionHandler {
         errorResponse.put("message", ex.getMessage());
         return ResponseEntity.badRequest().body(errorResponse); // 400 Bad Request
     }
+ 
 
     /**
      * Handles access denied exceptions from security checks
@@ -184,4 +185,12 @@ public class GlobalExceptionHandler {
         errorResponse.put("message", "An error occurred: " + ex.getMessage());
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse); // 500 Internal Server Error
     }
+  
+   @ExceptionHandler(ResourceNotFoundException.class) // Handle ResourceNotFoundException
+    public ResponseEntity<Map<String, String>> handleResourceNotFoundException(ResourceNotFoundException ex) {
+        Map<String, String> response = new HashMap<>();
+        response.put("error", ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND); // Return 404 for resource not found
+    }
+  
 }

@@ -2,6 +2,7 @@
 package com.example.lms.user.model;
 
 import com.example.lms.common.BaseEntity;
+import com.example.lms.Department.model.Department;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,7 +10,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.EqualsAndHashCode;
 import com.example.lms.user.model.Role;
-
+@Entity
 @Data                   // Lombok: Generates getters, setters, toString, equals, and hashCode
 @EqualsAndHashCode(callSuper = true) // Lombok: Generates equals and hashCode with a call to superclass
 @Table(name = "users")   // Specifies the database table name                  // Lombok: Generates getters, setters, toString, equals, and hashCode
@@ -36,4 +37,8 @@ public class User extends BaseEntity {
     
     @Column(nullable = false)
     private boolean isActive = true;  // Account status flag
+
+    @ManyToOne
+    @JoinColumn(name = "department_id")
+    private Department department;  // Relationship with Department
 }
