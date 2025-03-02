@@ -9,4 +9,20 @@ spring:
     show-sql: true  
     properties:
       hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+server:
+  port: 8080
+
+logging:
+  level:
+    org.springframework: INFO
+    com.example.lms: DEBUG
+    org.hibernate.SQL: DEBUG
+    io.jsonwebtoken: DEBUG
+
+# JWT Configuration
+jwt:
+  expiration: 86400000  # 24 hours in milliseconds
         format_sql: true
