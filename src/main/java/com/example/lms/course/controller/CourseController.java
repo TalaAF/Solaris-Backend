@@ -6,6 +6,7 @@ import com.example.lms.course.assembler.CourseAssembler;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
+
 import java.util.List;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 
@@ -23,7 +24,6 @@ public class CourseController {
 
     @PostMapping
     public ResponseEntity<CourseDTO> createCourse(@RequestBody CourseDTO courseDTO) {
-        // Create course using the service
         CourseDTO createdCourse = courseService.createCourse(courseDTO);
         return ResponseEntity.ok(courseAssembler.toModel(createdCourse)); // Add HATEOAS link to the DTO
     }
@@ -40,14 +40,12 @@ public class CourseController {
         return ResponseEntity.ok(CollectionModel.of(courses, linkTo(methodOn(CourseController.class).getAllCourses()).withSelfRel()));
     }
 
-    // Add update course endpoint
     @PutMapping("/{id}")
     public ResponseEntity<CourseDTO> updateCourse(@PathVariable Long id, @RequestBody CourseDTO courseDTO) {
         CourseDTO updatedCourse = courseService.updateCourse(id, courseDTO);
         return ResponseEntity.ok(courseAssembler.toModel(updatedCourse));
     }
 
-    // Add delete course endpoint
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteCourse(@PathVariable Long id) {
         courseService.deleteCourse(id);

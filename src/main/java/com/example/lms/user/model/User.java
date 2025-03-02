@@ -9,7 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.EqualsAndHashCode;
 import com.example.lms.user.model.Role;
-
+@Entity
 @Data                   // Lombok: Generates getters, setters, toString, equals, and hashCode
 @EqualsAndHashCode(callSuper = true) // Lombok: Generates equals and hashCode with a call to superclass
 @Table(name = "users")   // Specifies the database table name                  // Lombok: Generates getters, setters, toString, equals, and hashCode

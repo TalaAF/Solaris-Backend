@@ -9,6 +9,7 @@ import com.example.lms.user.repository.UserRepository;
 import com.example.lms.common.exception.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -39,11 +40,17 @@ public class CourseService {
             throw new IllegalArgumentException("Instructor email cannot be empty");
         }
 
+        // Find the instructor by email
         User instructor = userRepository.findByEmail(courseDTO.getInstructorEmail())
                 .orElseThrow(() -> new ResourceNotFoundException("Instructor not found"));
 
+        // Convert the DTO to entity
         Course course = CourseMapper.toEntity(courseDTO, instructor);
+
+        // Save the course entity to the repository
         Course savedCourse = courseRepository.save(course);
+
+        // Return the saved course as DTO
         return CourseMapper.toDTO(savedCourse);
     }
 
@@ -60,36 +67,44 @@ public class CourseService {
             throw new IllegalArgumentException("Instructor email cannot be empty");
         }
 
-        // Find the course by id
+        // Find the existing course by id
         Course course = courseRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found with id: " + id));
 
-        // Find the instructor
+        // Find the instructor by email
         User instructor = userRepository.findByEmail(courseDTO.getInstructorEmail())
                 .orElseThrow(() -> new ResourceNotFoundException("Instructor not found"));
 
-        // Update the course details
+        // Update course properties
         course.setTitle(courseDTO.getTitle());
         course.setDescription(courseDTO.getDescription());
         course.setInstructor(instructor);
 
-        // Save the updated course
+        // Save the updated course entity
         Course updatedCourse = courseRepository.save(course);
+
+        // Return the updated course as DTO
         return CourseMapper.toDTO(updatedCourse);
     }
 
     // Method to get a course by id
     public CourseDTO getCourseById(Long id) {
+        // Find the course by id
         Course course = courseRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found with id: " + id));
-        return CourseMapper.toDTO(course);  // Assuming you have a mapper to convert Course to CourseDTO
+
+        // Return the course as DTO
+        return CourseMapper.toDTO(course);
     }
 
     // Method to get all courses
     public List<CourseDTO> getAllCourses() {
+        // Get all courses
         List<Course> courses = courseRepository.findAll();
+
+        // Convert courses to DTOs
         return courses.stream()
-                      .map(CourseMapper::toDTO)  // Assuming you have a mapper to convert Course to CourseDTO
+                      .map(CourseMapper::toDTO)
                       .collect(Collectors.toList());
     }
 }

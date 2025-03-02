@@ -1,27 +1,12 @@
 spring:
-  profiles:
-    active: local
-    spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/lms_db
+    url: jdbc:postgresql://localhost:5432/my_new_database
     username: postgres
     password: MST
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: true
+      ddl-auto: update  # أو أي قيمة أخرى مثل create, validate, none
+    show-sql: true  # (اختياري) لعرض استعلامات SQL في السجلات
     properties:
       hibernate:
-        format_sql: true
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-
-server:
-  port: 8080
-  servlet:
-    context-path: /api/v1
-
-logging:
-  level:
-    org.springframework: INFO
-    com.example.lms: DEBUG
-
+        format_sql: true  # (اختياري) لتنسيق استعلامات SQL المعروضة
