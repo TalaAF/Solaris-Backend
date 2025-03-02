@@ -1,12 +1,12 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/my_new_database
+    url: jdbc:postgresql://localhost:5432/my_database
     username: postgres
     password: MST
   jpa:
     hibernate:
-      ddl-auto: update  # أو أي قيمة أخرى مثل create, validate, none
-    show-sql: true  # (اختياري) لعرض استعلامات SQL في السجلات
+      ddl-auto: update  
+    show-sql: true  
     properties:
       hibernate:
-        format_sql: true  # (اختياري) لتنسيق استعلامات SQL المعروضة
+        format_sql: true
