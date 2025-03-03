@@ -6,7 +6,7 @@ import com.example.lms.course.model.Course;
 import com.example.lms.course.repository.CourseRepository;
 import com.example.lms.user.model.User;
 import com.example.lms.user.repository.UserRepository;
-import com.example.lms.common.exception.ResourceNotFoundException;
+import com.example.lms.common.Exception.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 

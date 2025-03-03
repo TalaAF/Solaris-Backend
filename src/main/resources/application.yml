@@ -1,16 +1,18 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/my_database
+    url: jdbc:postgresql://localhost:5432/lmsdb
     username: postgres
-    password: MST
+    password: A!ciRche@postG
+    driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: update  
-    show-sql: true  
+      ddl-auto: update  # Keep this as "update" to preserve schema
+    show-sql: true
     properties:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
+  # Remove the H2 console configuration as it's not needed for PostgreSQL
 
 server:
   port: 8080
@@ -25,4 +27,3 @@ logging:
 # JWT Configuration
 jwt:
   expiration: 86400000  # 24 hours in milliseconds
-        format_sql: true

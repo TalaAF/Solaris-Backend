@@ -1,4 +1,4 @@
-package com.example.lms.common.exception;
+package com.example.lms.common.Exception;
 
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
