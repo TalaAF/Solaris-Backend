@@ -40,6 +40,17 @@ public class CourseController {
         return ResponseEntity.ok(CollectionModel.of(courses, linkTo(methodOn(CourseController.class).getAllCourses()).withSelfRel()));
     }
 
+    @GetMapping("/department/{departmentId}")
+    public ResponseEntity<CollectionModel<CourseDTO>> getCoursesByDepartment(@PathVariable Long departmentId) {
+        List<CourseDTO> courses = courseService.getCoursesByDepartment(departmentId);
+        return ResponseEntity.ok(
+            CollectionModel.of(
+                courses, 
+                linkTo(methodOn(CourseController.class).getCoursesByDepartment(departmentId)).withSelfRel()
+            )
+        );
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<CourseDTO> updateCourse(@PathVariable Long id, @RequestBody CourseDTO courseDTO) {
         CourseDTO updatedCourse = courseService.updateCourse(id, courseDTO);

@@ -34,16 +34,24 @@ public class UserMapper {
     }
     
     public UserDTO toDto(User user) {
-        return UserDTO.builder()
-                .id(user.getId())
-                .email(user.getEmail())
-                .fullName(user.getFullName())
-                .role(user.getRole())
-                .profilePicture(user.getProfilePicture())
-                .isActive(user.isActive())
-                .createdAt(user.getCreatedAt())
-                .updatedAt(user.getUpdatedAt())
-                .build();
+        UserDTO dto = UserDTO.builder()
+        .id(user.getId())
+        .email(user.getEmail())
+        .fullName(user.getFullName())
+        .role(user.getRole())
+        .profilePicture(user.getProfilePicture())
+        .isActive(user.isActive())
+        .createdAt(user.getCreatedAt())
+        .updatedAt(user.getUpdatedAt())
+        .build();
+        
+// Add department info if available
+if (user.getDepartment() != null) {
+    dto.setDepartmentId(user.getDepartment().getId());
+    dto.setDepartmentName(user.getDepartment().getName());
+}
+
+return dto;
     }
     
     public User toEntity(UserCreateRequest request) {

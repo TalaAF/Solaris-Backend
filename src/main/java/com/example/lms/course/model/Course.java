@@ -1,5 +1,6 @@
 package com.example.lms.course.model;
 
+import com.example.lms.Department.model.Department;
 import com.example.lms.user.model.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -23,6 +24,10 @@ public class Course {
 
     @Column(columnDefinition = "TEXT")
     private String description;
+
+    @ManyToOne
+@JoinColumn(name = "department_id")
+private Department department;
 
     @ManyToOne
     @JoinColumn(name = "instructor_id", nullable = false)

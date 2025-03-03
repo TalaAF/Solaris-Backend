@@ -29,6 +29,8 @@ public class UserDTO {
     private String email;
     private String fullName;
     private Role role;
+    private Long departmentId;
+    private String departmentName;
     private String profilePicture;
     private boolean isActive;
     private LocalDateTime createdAt;
