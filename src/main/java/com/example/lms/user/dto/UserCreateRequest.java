@@ -37,4 +37,6 @@ public class UserCreateRequest {
     private Role role;
 
     private String profilePicture;
+
+    private Long departmentId;
 }

@@ -1,5 +1,6 @@
 package com.example.lms.user.mapper;
 
+import com.example.lms.Department.model.Department;
 import com.example.lms.user.dto.UserCreateRequest;
 import com.example.lms.user.dto.UserDTO;
 import com.example.lms.user.dto.UserUpdateRequest;
@@ -54,15 +55,20 @@ if (user.getDepartment() != null) {
 return dto;
     }
     
-    public User toEntity(UserCreateRequest request) {
-        return User.builder()
+    public User toEntity(UserCreateRequest request,Department department) {
+        User.UserBuilder builder = User.builder()
                 .email(request.getEmail())
                 .fullName(request.getFullName())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(request.getRole())
                 .profilePicture(request.getProfilePicture())
-                .isActive(true)
-                .build();
+                .isActive(true);
+                
+        if (department != null) {
+            builder.department(department);
+        }
+        
+        return builder.build();
     }
     
     public void updateEntity(User user, UserUpdateRequest request) {
