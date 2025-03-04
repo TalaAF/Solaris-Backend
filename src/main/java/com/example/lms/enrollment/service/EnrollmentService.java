@@ -40,12 +40,20 @@ public class EnrollmentService {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found with ID: " + courseId));
 
-        // Check if the course is already full
-        if (course.getStudents().size() >= course.getMaxCapacity()) {
-            throw new IllegalArgumentException("The course is already full, cannot enroll more students.");
+        // Check if the student has completed all prerequisites
+        if (course.getPrerequisites() != null && !course.getPrerequisites().isEmpty()) {
+            List<Long> completedCourseIds = enrollmentRepository.findByStudentId(studentId).stream()
+                    .map(Enrollment::getCourse)
+                    .map(Course::getId)
+                    .collect(Collectors.toList());
+
+            for (Course prerequisite : course.getPrerequisites()) {
+                if (!completedCourseIds.contains(prerequisite.getId())) {
+                    throw new IllegalArgumentException("Student has not completed the prerequisites for this course.");
+                }
+            }
         }
 
-        // Check if the student is already enrolled in the course
         if (enrollmentRepository.findByStudentIdAndCourseId(studentId, courseId).isPresent()) {
             throw new IllegalArgumentException("Student is already enrolled in this course.");
         }
