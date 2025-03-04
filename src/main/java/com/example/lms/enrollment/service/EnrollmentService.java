@@ -34,36 +34,22 @@ public class EnrollmentService {
     private EnrollmentAssembler enrollmentAssembler;
 
     public EnrollmentDTO enrollStudent(Long studentId, Long courseId) {
-        // Check if the student exists
         User student = userRepository.findById(studentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Student not found with ID: " + studentId));
 
-        // Check if the course exists
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found with ID: " + courseId));
 
-        // Check if student is already enrolled in the course
+        // Check if the course is already full
+        if (course.getStudents().size() >= course.getMaxCapacity()) {
+            throw new IllegalArgumentException("The course is already full, cannot enroll more students.");
+        }
+
+        // Check if the student is already enrolled in the course
         if (enrollmentRepository.findByStudentIdAndCourseId(studentId, courseId).isPresent()) {
             throw new IllegalArgumentException("Student is already enrolled in this course.");
         }
 
-        // Check if the course has reached its maximum capacity
-        if (enrollmentRepository.findByCourseId(courseId).size() >= course.getMaxCapacity()) {
-            throw new IllegalArgumentException("Course is full.");
-        }
-
-        // Check if the student has completed the prerequisite courses
-        List<Course> prerequisites = (List<Course>) course.getPrerequisites();
-        for (Course prerequisite : prerequisites) {
-            boolean completedPrerequisite = enrollmentRepository.findByStudentIdAndCourseId(studentId, prerequisite.getId())
-                    .filter(enrollment -> enrollment.getStatus() == EnrollmentStatus.COMPLETED)
-                    .isPresent();
-            if (!completedPrerequisite) {
-                throw new IllegalArgumentException("Student has not completed the prerequisite course: " + prerequisite.getName());
-            }
-        }
-
-        // Create the enrollment DTO
         EnrollmentDTO enrollmentDTO = EnrollmentDTO.builder()
                 .studentId(studentId)
                 .courseId(courseId)
@@ -71,33 +57,26 @@ public class EnrollmentService {
                 .enrollmentDate(LocalDateTime.now())
                 .build();
 
-        // Convert DTO to entity and save the enrollment
         Enrollment enrollment = enrollmentAssembler.toEntity(enrollmentDTO, student, course);
         enrollmentRepository.save(enrollment);
-
-        // Return the enrollment DTO
         return EnrollmentMapper.toDTO(enrollment);
     }
 
     public List<EnrollmentDTO> getEnrollmentsForStudent(Long studentId) {
-        // Check if the student exists
         userRepository.findById(studentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Student not found with ID: " + studentId));
 
-        // Fetch the list of enrollments for the student
-        List<Enrollment> enrollments = enrollmentRepository.findByStudentId(studentId);
+        List<Enrollment> enrollments = enrollmentRepository.findByStudentId(studentId); 
         return enrollments.stream()
                 .map(EnrollmentMapper::toDTO)
                 .collect(Collectors.toList());
     }
 
     public List<EnrollmentDTO> getEnrollmentsForCourse(Long courseId) {
-        // Check if the course exists
         courseRepository.findById(courseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found with ID: " + courseId));
 
-        // Fetch the list of enrollments for the course
-        List<Enrollment> enrollments = enrollmentRepository.findByCourseId(courseId);
+        List<Enrollment> enrollments = enrollmentRepository.findByCourseId(courseId); 
         return enrollments.stream()
                 .map(EnrollmentMapper::toDTO)
                 .collect(Collectors.toList());
