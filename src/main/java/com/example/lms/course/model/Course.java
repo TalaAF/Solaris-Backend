@@ -7,6 +7,7 @@ import lombok.*;
 
 import java.util.HashSet;
 import java.util.Set;
+
 @Entity
 @Getter
 @Setter
@@ -26,8 +27,8 @@ public class Course {
     private String description;
 
     @ManyToOne
-@JoinColumn(name = "department_id")
-private Department department;
+    @JoinColumn(name = "department_id")
+    private Department department;
 
     @ManyToOne
     @JoinColumn(name = "instructor_id", nullable = false)
@@ -40,6 +41,36 @@ private Department department;
         inverseJoinColumns = @JoinColumn(name = "student_id")
     )
     private Set<User> students = new HashSet<>();
+
+    // New field for the maximum number of students
+    @Column(nullable = false)
+    private int maxCapacity;
+
+    // New field for prerequisites (other courses)
+    @ManyToMany
+    @JoinTable(
+        name = "course_prerequisites",
+        joinColumns = @JoinColumn(name = "course_id"),
+        inverseJoinColumns = @JoinColumn(name = "prerequisite_id")
+    )
+    private Set<Course> prerequisites = new HashSet<>();
+
+    // Getters and Setters for maxCapacity and prerequisites
+    public int getMaxCapacity() {
+        return this.maxCapacity;
+    }
+
+    public void setMaxCapacity(int maxCapacity) {
+        this.maxCapacity = maxCapacity;
+    }
+
+    public Set<Course> getPrerequisites() {
+        return this.prerequisites;
+    }
+
+    public void setPrerequisites(Set<Course> prerequisites) {
+        this.prerequisites = prerequisites;
+    }
 
     // Adding the missing methods for title
     public String getTitle() {
