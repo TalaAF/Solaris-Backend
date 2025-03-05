@@ -31,7 +31,6 @@ public class EnrollmentController {
     public List<EnrollmentDTO> getEnrollmentsForCourse(@PathVariable Long courseId) {
         return enrollmentService.getEnrollmentsForCourse(courseId);
     }
-    
     @PatchMapping("/{studentId}/{courseId}/progress")
 public ResponseEntity<EnrollmentDTO> updateProgress(
         @PathVariable Long studentId,
