@@ -7,31 +7,25 @@ import com.example.lms.user.model.User;
 
 public class EnrollmentMapper {
 
+    // Convert DTO to Entity
     public static Enrollment toEntity(EnrollmentDTO dto, User student, Course course) {
-        if (dto == null) {
-            return null;
-        }
-
         return Enrollment.builder()
-                .student(student) // Assign student entity
-                .course(course)   // Assign course entity
+                .student(student)
+                .course(course)
                 .status(dto.getStatus())
                 .enrollmentDate(dto.getEnrollmentDate())
-                .progress(dto.getProgress() != null ? dto.getProgress() : 0.0) // Handle possible null progress
+                .progress(dto.getProgress()) // If you are tracking progress
                 .build();
     }
 
+    // Convert Entity to DTO
     public static EnrollmentDTO toDTO(Enrollment enrollment) {
-        if (enrollment == null) {
-            return null;
-        }
-
         return EnrollmentDTO.builder()
-                .studentId(enrollment.getStudent().getId()) // Convert student entity to studentId
-                .courseId(enrollment.getCourse().getId())   // Convert course entity to courseId
+                .studentId(enrollment.getStudent().getId())
+                .courseId(enrollment.getCourse().getId())
                 .status(enrollment.getStatus())
                 .enrollmentDate(enrollment.getEnrollmentDate())
-                .progress(enrollment.getProgress())
+                .progress(enrollment.getProgress()) // Ensure this field exists in `Enrollment`
                 .build();
     }
 }
