@@ -10,10 +10,13 @@ import org.springframework.stereotype.Component;
 @Component
 public class EnrollmentAssembler {
 
+    // Convert DTO to Entity
     public Enrollment toEntity(EnrollmentDTO dto, User student, Course course) {
-        Enrollment enrollment = EnrollmentMapper.toEntity(dto);
-        enrollment.setStudent(student);
-        enrollment.setCourse(course);
-        return enrollment;
+        return EnrollmentMapper.toEntity(dto, student, course);
+    }
+
+    // Convert Entity to DTO
+    public EnrollmentDTO toDTO(Enrollment enrollment) {
+        return EnrollmentMapper.toDTO(enrollment);
     }
 }
