@@ -4,6 +4,7 @@ import com.example.lms.enrollment.dto.EnrollmentDTO;
 import com.example.lms.enrollment.service.EnrollmentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -30,4 +31,15 @@ public class EnrollmentController {
     public List<EnrollmentDTO> getEnrollmentsForCourse(@PathVariable Long courseId) {
         return enrollmentService.getEnrollmentsForCourse(courseId);
     }
+    
+    @PatchMapping("/{studentId}/{courseId}/progress")
+public ResponseEntity<EnrollmentDTO> updateProgress(
+        @PathVariable Long studentId,
+        @PathVariable Long courseId,
+        @RequestParam Double progress) {
+    
+    EnrollmentDTO updatedEnrollment = enrollmentService.updateProgress(studentId, courseId, progress);
+    return ResponseEntity.ok(updatedEnrollment);
+}
+
 }
