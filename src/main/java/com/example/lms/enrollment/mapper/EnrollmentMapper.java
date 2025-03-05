@@ -4,22 +4,13 @@ import com.example.lms.enrollment.dto.EnrollmentDTO;
 import com.example.lms.enrollment.model.Enrollment;
 
 public class EnrollmentMapper {
-
     public static EnrollmentDTO toDTO(Enrollment enrollment) {
         return EnrollmentDTO.builder()
-                .id(enrollment.getId())
                 .studentId(enrollment.getStudent().getId())
                 .courseId(enrollment.getCourse().getId())
                 .status(enrollment.getStatus())
-                .enrollmentDate(enrollment.getEnrolledAt())
+                .enrollmentDate(enrollment.getEnrollmentDate())
+                .progress(enrollment.getProgress()) // Include progress
                 .build();
-    }
-
-    public static Enrollment toEntity(EnrollmentDTO dto) {
-        Enrollment enrollment = new Enrollment();
-        enrollment.setId(dto.getId());
-        enrollment.setStatus(dto.getStatus());
-        enrollment.setEnrolledAt(dto.getEnrollmentDate());
-        return enrollment;
     }
 }
