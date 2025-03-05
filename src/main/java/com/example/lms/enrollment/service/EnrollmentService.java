@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -42,11 +43,31 @@ public class EnrollmentService {
     
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found with ID: " + courseId));
-    
+
+        // Capacity check
         if (course.getStudents().size() >= course.getMaxCapacity()) {
             throw new IllegalArgumentException("Course capacity reached, cannot enroll more students.");
         }
+
+        // Prerequisite check
+        Set<Course> prerequisites = course.getPrerequisites();
+        if (prerequisites != null && !prerequisites.isEmpty()) {
+            List<Long> prerequisiteCourseIds = prerequisites.stream()
+                    .map(Course::getId)
+                    .collect(Collectors.toList());
+
+            List<Enrollment> studentEnrollments = enrollmentRepository.findByStudentId(studentId);
+            Set<Long> completedCourses = studentEnrollments.stream()
+                    .map(enrollment -> enrollment.getCourse().getId())
+                    .collect(Collectors.toSet());
+
+            // Check if the student has completed all prerequisite courses
+            if (!completedCourses.containsAll(prerequisiteCourseIds)) {
+                throw new IllegalArgumentException("Student must complete all prerequisite courses before enrolling.");
+            }
+        }
     
+        // Check if the student is already enrolled in this course
         if (enrollmentRepository.findByStudentIdAndCourseId(studentId, courseId).isPresent()) {
             throw new IllegalArgumentException("Student is already enrolled in this course.");
         }
@@ -66,7 +87,6 @@ public class EnrollmentService {
     
         return EnrollmentMapper.toDTO(enrollment);
     }
-    
 
     public List<EnrollmentDTO> getEnrollmentsForStudent(Long studentId) {
         userRepository.findById(studentId)
