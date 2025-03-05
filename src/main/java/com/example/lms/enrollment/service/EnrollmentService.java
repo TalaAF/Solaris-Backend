@@ -89,4 +89,19 @@ public class EnrollmentService {
                 .map(EnrollmentMapper::toDTO)
                 .collect(Collectors.toList());
     }
+    public EnrollmentDTO updateProgress(Long studentId, Long courseId, Double progress) {
+        Enrollment enrollment = enrollmentRepository.findByStudentIdAndCourseId(studentId, courseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Enrollment not found"));
+    
+        // Ensure progress is within valid range (0-100%)
+        if (progress < 0 || progress > 100) {
+            throw new IllegalArgumentException("Progress must be between 0 and 100.");
+        }
+    
+        enrollment.setProgress(progress);
+        enrollmentRepository.save(enrollment);
+        
+        return EnrollmentMapper.toDTO(enrollment);
+    }
+    
 }
