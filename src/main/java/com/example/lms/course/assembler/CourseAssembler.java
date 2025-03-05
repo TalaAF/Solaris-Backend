@@ -21,7 +21,8 @@ public class CourseAssembler extends RepresentationModelAssemblerSupport<CourseD
         // Add additional links for update and delete
         courseDTO.add(linkTo(methodOn(CourseController.class).updateCourse(courseDTO.getId(), courseDTO)).withRel("update"));
         courseDTO.add(linkTo(methodOn(CourseController.class).deleteCourse(courseDTO.getId())).withRel("delete"));
-        
+        courseDTO.add(linkTo(methodOn(CourseController.class).getCourseById(courseDTO.getId()))
+        .withRel("course-max-capacity"));
         return courseDTO;
     }
 }

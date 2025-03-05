@@ -39,48 +39,34 @@ public class EnrollmentService {
     public EnrollmentDTO enrollStudent(Long studentId, Long courseId) {
         User student = userRepository.findById(studentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Student not found with ID: " + studentId));
-
+    
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found with ID: " + courseId));
-
-        // Check if the student has completed all prerequisites
-        if (course.getPrerequisites() != null && !course.getPrerequisites().isEmpty()) {
-            List<Long> completedCourseIds = enrollmentRepository.findByStudentId(studentId).stream()
-                    .map(Enrollment::getCourse)
-                    .map(Course::getId)
-                    .collect(Collectors.toList());
-
-            for (Course prerequisite : course.getPrerequisites()) {
-                if (!completedCourseIds.contains(prerequisite.getId())) {
-                    throw new IllegalArgumentException("Student has not completed the prerequisites for this course.");
-                }
-            }
+    
+        if (course.getStudents().size() >= course.getMaxCapacity()) {
+            throw new IllegalArgumentException("Course capacity reached, cannot enroll more students.");
         }
-
-        // Check if the course has reached its max capacity
-        if (course.getMaxCapacity() != null && course.getStudents().size() >= course.getMaxCapacity()) {
-            throw new IllegalArgumentException("Course has reached its maximum capacity.");
-        }
-
+    
         if (enrollmentRepository.findByStudentIdAndCourseId(studentId, courseId).isPresent()) {
             throw new IllegalArgumentException("Student is already enrolled in this course.");
         }
-
+    
         EnrollmentDTO enrollmentDTO = EnrollmentDTO.builder()
                 .studentId(studentId)
                 .courseId(courseId)
                 .status(EnrollmentStatus.PENDING)
                 .enrollmentDate(LocalDateTime.now())
                 .build();
-
+    
         Enrollment enrollment = enrollmentAssembler.toEntity(enrollmentDTO, student, course);
         enrollmentRepository.save(enrollment);
-
-        // Send enrollment notification
+    
+        // Notify the student about successful enrollment
         enrollmentNotificationService.notifyEnrollment(studentId, courseId);
-
+    
         return EnrollmentMapper.toDTO(enrollment);
     }
+    
 
     public List<EnrollmentDTO> getEnrollmentsForStudent(Long studentId) {
         userRepository.findById(studentId)

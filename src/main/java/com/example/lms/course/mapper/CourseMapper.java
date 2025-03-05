@@ -8,13 +8,17 @@ import com.example.lms.user.model.User;
 public class CourseMapper {
 
     // Convert CourseDTO to Course entity
-    public static Course toEntity(CourseDTO courseDTO, User instructor, Department department){
+    public static Course toEntity(CourseDTO courseDTO, User instructor, Department department) {
         Course course = new Course();
         course.setTitle(courseDTO.getTitle());
         course.setDescription(courseDTO.getDescription());
         course.setInstructor(instructor);
         if (department != null) {
             course.setDepartment(department);
+        }
+        // Set the max capacity from DTO to entity
+        if (courseDTO.getMaxCapacity() != null) {
+            course.setMaxCapacity(courseDTO.getMaxCapacity());
         }
         return course;
     }
@@ -30,6 +34,8 @@ public class CourseMapper {
             courseDTO.setDepartmentId(course.getDepartment().getId());
             courseDTO.setDepartmentName(course.getDepartment().getName());
         }
+        // Add max capacity to the DTO
+        courseDTO.setMaxCapacity(course.getMaxCapacity());
         return courseDTO;
     }
 }

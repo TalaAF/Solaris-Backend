@@ -11,7 +11,7 @@ public class CourseDTO extends RepresentationModel<CourseDTO> {
     private String instructorEmail; 
     private Long departmentId;
     private String departmentName;
-
+    private Integer maxCapacity; 
     public CourseDTO() {}
 
     public CourseDTO(Long id, String title, String description, String instructorEmail) {

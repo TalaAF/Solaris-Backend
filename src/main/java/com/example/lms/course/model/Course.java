@@ -51,6 +51,15 @@ public class Course {
     )
     private Set<Course> prerequisites = new HashSet<>();
 
+    // Add Max Capacity field
+    @Column(nullable = false)
+    private Integer maxCapacity;
+
+    // Get the current number of students enrolled in the course
+    public int getCurrentEnrollment() {
+        return this.students.size();
+    }
+
     public String getTitle() {
         return this.name; // Return the name as the title
     }
