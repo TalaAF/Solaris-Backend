@@ -6,7 +6,6 @@ import com.example.lms.enrollment.dto.EnrollmentDTO;
 import com.example.lms.enrollment.mapper.EnrollmentMapper;
 import com.example.lms.enrollment.model.Enrollment;
 import com.example.lms.enrollment.model.EnrollmentStatus;
-import com.example.lms.enrollment.repository.EnrollmentRepository;
 import com.example.lms.course.model.Course;
 import com.example.lms.course.repository.CourseRepository;
 import com.example.lms.user.model.User;
@@ -34,7 +33,7 @@ public class EnrollmentService {
     private EnrollmentAssembler enrollmentAssembler;
 
     @Autowired
-    private EnrollmentNotificationService enrollmentNotificationService;  // Added for notifications
+    private EnrollmentNotificationService enrollmentNotificationService;
 
     public EnrollmentDTO enrollStudent(Long studentId, Long courseId) {
         User student = userRepository.findById(studentId)
@@ -86,7 +85,7 @@ public class EnrollmentService {
         userRepository.findById(studentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Student not found with ID: " + studentId));
 
-        List<Enrollment> enrollments = enrollmentRepository.findByStudentId(studentId); 
+        List<Enrollment> enrollments = enrollmentRepository.findByStudentId(studentId);
         return enrollments.stream()
                 .map(EnrollmentMapper::toDTO)
                 .collect(Collectors.toList());
@@ -96,7 +95,7 @@ public class EnrollmentService {
         courseRepository.findById(courseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found with ID: " + courseId));
 
-        List<Enrollment> enrollments = enrollmentRepository.findByCourseId(courseId); 
+        List<Enrollment> enrollments = enrollmentRepository.findByCourseId(courseId);
         return enrollments.stream()
                 .map(EnrollmentMapper::toDTO)
                 .collect(Collectors.toList());
