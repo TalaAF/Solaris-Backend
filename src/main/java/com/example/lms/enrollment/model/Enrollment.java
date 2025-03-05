@@ -8,12 +8,12 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "enrollments")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Table(name = "enrollments")
 public class Enrollment {
 
     @Id
@@ -29,14 +29,12 @@ public class Enrollment {
     private Course course;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
     private EnrollmentStatus status;
 
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime enrolledAt;
+    private LocalDateTime enrollmentDate;
 
-    @PrePersist
-    protected void onEnroll() {
-        this.enrolledAt = LocalDateTime.now();
-    }
+    // Add progress tracking field
+    @Column(nullable = false)
+    private Double progress = 0.0; // Default to 0%
+
 }
