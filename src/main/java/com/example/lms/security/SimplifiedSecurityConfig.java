@@ -34,6 +34,7 @@ public class SimplifiedSecurityConfig {
 
     private final JwtTokenProvider tokenProvider;
     private final CustomUserDetailsService customUserDetailsService;
+    private final DynamicPermissionFilter dynamicPermissionFilter;
 
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter() {
@@ -73,8 +74,8 @@ public class SimplifiedSecurityConfig {
         .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(authorize -> authorize
                 // Public endpoints
-                .requestMatchers("/api/v1/auth/**").permitAll()
-                .requestMatchers("/api/v1/debug/**").permitAll()
+                .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/api/debug/**").permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
                 // Protected endpoints
                 .anyRequest().authenticated()
@@ -86,6 +87,8 @@ public class SimplifiedSecurityConfig {
         // Add JWT filter
         http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
+        http.addFilterAfter(dynamicPermissionFilter, JwtAuthenticationFilter.class);
+        
         return http.build();
     }
 

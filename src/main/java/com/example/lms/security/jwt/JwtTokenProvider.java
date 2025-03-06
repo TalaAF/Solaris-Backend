@@ -34,9 +34,18 @@ public class JwtTokenProvider {
         
         Map<String, Object> claims = new HashMap<>();
         Collection<? extends GrantedAuthority> authorities = userDetails.getAuthorities();
-        claims.put("roles", authorities.stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.toList()));
+        List<String> roles = authorities.stream()
+        .map(GrantedAuthority::getAuthority)
+        .filter(auth -> auth.startsWith("ROLE_"))
+        .collect(Collectors.toList());
+
+        List<String> permissions = authorities.stream()
+        .map(GrantedAuthority::getAuthority)
+        .filter(auth -> !auth.startsWith("ROLE_"))
+        .collect(Collectors.toList());
+
+        claims.put("roles", roles);
+        claims.put("permissions", permissions);
 
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expirationTime);
@@ -65,10 +74,19 @@ public class JwtTokenProvider {
         String username = claims.getSubject();
         
         List<String> roles = claims.get("roles", List.class);
-        List<SimpleGrantedAuthority> authorities = roles.stream()
-                .map(SimpleGrantedAuthority::new)
-                .collect(Collectors.toList());
+        List<String> permissions = claims.get("permissions", List.class);
 
+        List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+       
+        if (roles != null) {
+            roles.forEach(role -> authorities.add(new SimpleGrantedAuthority(role)));
+        }
+        
+        // Add permissions
+        if (permissions != null) {
+            permissions.forEach(permission -> authorities.add(new SimpleGrantedAuthority(permission)));
+        }
+    
         return new User(username, "", authorities);
     }
 
