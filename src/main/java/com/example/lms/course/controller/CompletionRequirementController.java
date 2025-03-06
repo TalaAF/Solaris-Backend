@@ -2,7 +2,7 @@ package com.example.lms.course.controller;
 
 import com.example.lms.course.dto.CompletionRequirementDTO;
 import com.example.lms.course.model.CompletionRequirement;
-import com.example.lms.course.service.CompletionRequirementService;
+import com.example.lms.course.service.CompletionVerificationService;
 import com.example.lms.course.assembler.CompletionRequirementAssembler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -15,7 +15,7 @@ import java.util.List;
 public class CompletionRequirementController {
 
     @Autowired
-    private CompletionRequirementService completionRequirementService;
+    private CompletionVerificationService completionVerificationService; // Corrected the service name
 
     @Autowired
     private CompletionRequirementAssembler completionRequirementAssembler;
@@ -23,7 +23,7 @@ public class CompletionRequirementController {
     // Get all completion requirements for a course
     @GetMapping("/course/{courseId}")
     public ResponseEntity<List<CompletionRequirementDTO>> getCompletionRequirements(@PathVariable Long courseId) {
-        List<CompletionRequirement> completionRequirements = completionRequirementService.getCompletionRequirementsForCourse(courseId);
+        List<CompletionRequirement> completionRequirements = completionVerificationService.getCompletionRequirementsForCourse(courseId);
         List<CompletionRequirementDTO> dtos = completionRequirementAssembler.toDTO(completionRequirements);
         return ResponseEntity.ok(dtos);
     }
@@ -35,7 +35,7 @@ public class CompletionRequirementController {
             @RequestBody CompletionRequirementDTO completionRequirementDTO) {
         
         CompletionRequirement completionRequirement = completionRequirementAssembler.toEntity(completionRequirementDTO);
-        CompletionRequirement createdRequirement = completionRequirementService.createCompletionRequirement(courseId, completionRequirement);
+        CompletionRequirement createdRequirement = completionVerificationService.createCompletionRequirement(courseId, completionRequirement);
         CompletionRequirementDTO createdDTO = completionRequirementAssembler.toDTO(createdRequirement);
         
         return ResponseEntity.ok(createdDTO);
