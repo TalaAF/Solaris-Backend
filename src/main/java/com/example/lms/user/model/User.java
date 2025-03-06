@@ -9,36 +9,37 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.EqualsAndHashCode;
-import com.example.lms.user.model.Role;
-@Entity
-@Data                   // Lombok: Generates getters, setters, toString, equals, and hashCode
+import com.example.lms.security.model.Role;
+
+@Data // Lombok: Generates getters, setters, toString, equals, and hashCode
 @EqualsAndHashCode(callSuper = true) // Lombok: Generates equals and hashCode with a call to superclass
-@Table(name = "users")   // Specifies the database table name                  // Lombok: Generates getters, setters, toString, equals, and hashCode
-@Builder                // Lombok: Enables the builder pattern for object creation
-@NoArgsConstructor     // Lombok: Generates a no-args constructor
-@AllArgsConstructor    // Lombok: Generates a constructor with all properties
+@Table(name = "users") // Specifies the database table name // Lombok: Generates getters, setters,
+                       // toString, equals, and hashCode
+@Builder // Lombok: Enables the builder pattern for object creation
+@NoArgsConstructor // Lombok: Generates a no-args constructor
+@AllArgsConstructor // Lombok: Generates a constructor with all properties
 @Entity
 public class User extends BaseEntity {
-    
+
     @Column(nullable = false, unique = true)
-    private String email;        // User's email address (used for login)
-    
+    private String email; // User's email address (used for login)
+
     @Column(nullable = false)
-    private String password;     // Encrypted password
-    
+    private String password; // Encrypted password
+
     @Column(nullable = false)
-    private String fullName;     // User's full name
-    
-    @Enumerated(EnumType.STRING)
+    private String fullName; // User's full name
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
+    private Set<Role> roles = new HashSet<>();
+
+    private String profilePicture; // Optional profile picture URL
+
     @Column(nullable = false)
-    private Role role;          // User's role in the system
-    
-    private String profilePicture;  // Optional profile picture URL
-    
-    @Column(nullable = false)
-    private boolean isActive = true;  // Account status flag
+    private boolean isActive = true; // Account status flag
 
     @ManyToOne
     @JoinColumn(name = "department_id")
-    private Department department;  // Relationship with Department
+    private Department department; // Relationship with Department
 }
