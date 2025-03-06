@@ -34,6 +34,11 @@ public class SecurityEndpointService {
         
         // Find the most specific matching endpoint
         for (SecurityEndpoint endpoint : endpoints) {
+            // Skip inactive permissions
+            if (!endpoint.getRequiredPermission().isActive()) {
+                continue;
+            }
+
             if (pathMatcher.match(endpoint.getPathPattern(), requestPath)) {
                 requiresPermission = true;
                 requiredPermission = endpoint.getRequiredPermission().getName();

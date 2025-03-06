@@ -58,11 +58,20 @@ public class CustomUserDetailsService implements UserDetailsService {
      Set<GrantedAuthority> authorities = new HashSet<>();
     
      for (Role role : user.getRoles()) {
+        // Skip inactive roles
+        if (!role.isActive()) {
+            continue;
+        }
+        
          // Add role as an authority with ROLE_ prefix
          authorities.add(new SimpleGrantedAuthority("ROLE_" + role.getName()));
          
          // Add each permission as an authority
          for (Permission permission : role.getPermissions()) {
+             // Skip inactive permissions
+             if (!permission.isActive()) {
+                continue;
+            }
              authorities.add(new SimpleGrantedAuthority(permission.getName()));
          }
      }
