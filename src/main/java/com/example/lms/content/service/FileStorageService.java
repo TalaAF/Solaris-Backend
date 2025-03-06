@@ -69,4 +69,15 @@ public class FileStorageService {
         }
     }
 
+
+    public void deleteFile(String filePath) {
+        try {
+            Path path = Paths.get(filePath).normalize();
+            Files.deleteIfExists(path); // Delete the file if it exists
+
+        } catch (IOException ex) {
+            throw new RuntimeException("Could not delete file: " + filePath, ex);
+        }
+    }
+
 }
