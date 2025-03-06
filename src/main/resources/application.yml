@@ -27,3 +27,8 @@ logging:
 # JWT Configuration
 jwt:
   expiration: 86400000  # 24 hours in milliseconds
+
+  #file-storage
+  file:
+  storage:
+    location: "file-storage"

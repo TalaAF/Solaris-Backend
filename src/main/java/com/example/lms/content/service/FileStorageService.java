@@ -20,9 +20,6 @@ public class FileStorageService {
     @Value("${file.storage.location}")
     private String storageLocation;
 
-    @Value("${file.storage.max-file-size}")
-    private long maxFileSize;
-
     private Path fileStorageLocation;
     private final List<String> allowedFileTypes = Arrays.asList(
         "image/jpeg", 
@@ -43,7 +40,6 @@ public class FileStorageService {
     }
 
     public String storeFile(MultipartFile file) {
-        validateFileSize(file);
         validateFileType(file);
         scanForViruses(file);
 
@@ -66,12 +62,6 @@ public class FileStorageService {
             return resource;
         } catch (Exception ex) {
             throw new RuntimeException("File not found: " + fileName, ex);
-        }
-    }
-
-    private void validateFileSize(MultipartFile file) {
-        if (file.getSize() > maxFileSize) {
-            throw new RuntimeException("File size exceeds the allowed limit of " + maxFileSize + " bytes");
         }
     }
 
