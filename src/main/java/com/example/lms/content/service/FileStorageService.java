@@ -41,8 +41,6 @@ public class FileStorageService {
 
     public String storeFile(MultipartFile file) {
         validateFileType(file);
-        scanForViruses(file);
-
         try {
             Path targetLocation = this.fileStorageLocation.resolve(file.getOriginalFilename());
             Files.copy(file.getInputStream(), targetLocation);
@@ -71,16 +69,4 @@ public class FileStorageService {
         }
     }
 
-    private void scanForViruses(MultipartFile file) {
-        try {
-            // تنفيذ فحص الفيروسات باستخدام ClamAV
-            ClamAVClient clamAVClient = new ClamAVClient("localhost", 3310);
-            byte[] reply = clamAVClient.scan(file.getBytes());
-            if (!ClamAVClient.isCleanReply(reply)) {
-                throw new RuntimeException("File is infected with a virus: " + file.getOriginalFilename());
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("Virus scan failed", e);
-        }
-    }
 }

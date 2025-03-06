@@ -28,7 +28,7 @@ logging:
 jwt:
   expiration: 86400000  # 24 hours in milliseconds
 
-  #file-storage
-  file:
+# File storage configuration
+file:
   storage:
-    location: "file-storage"
+    location: "file-storage"  
