@@ -53,13 +53,26 @@ public class CustomUserDetailsService implements UserDetailsService {
                    if (!user.isActive()) {
         throw new LockedException("User account is locked");
     }
+
+     // Collect authorities from all roles and permissions
+     Set<GrantedAuthority> authorities = new HashSet<>();
+    
+     for (Role role : user.getRoles()) {
+         // Add role as an authority with ROLE_ prefix
+         authorities.add(new SimpleGrantedAuthority("ROLE_" + role.getName()));
+         
+         // Add each permission as an authority
+         for (Permission permission : role.getPermissions()) {
+             authorities.add(new SimpleGrantedAuthority(permission.getName()));
+         }
+     }
         // Convert our User entity to Spring Security's UserDetails
         return org.springframework.security.core.userdetails.User
                 .withUsername(user.getEmail())
                 .password(user.getPassword())  // Already encoded password
                 // Convert our role to Spring Security role with "ROLE_" prefix
                 // This prefix is required for @PreAuthorize annotations to work with hasRole()
-                .authorities(Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole().name())))
+                .authorities(authorities)
                 // Set account status based on isActive flag
                 .accountExpired(!user.isActive())
                 .accountLocked(!user.isActive())
