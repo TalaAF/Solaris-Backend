@@ -10,12 +10,12 @@ public class AuthResponse {
     private String tokenType = "Bearer";
     private Long userId;
     private String email;
-    private String role;
+    private String roles;
 
-    public AuthResponse(String accessToken, Long userId, String email, String role) {
+    public AuthResponse(String accessToken, Long userId, String email, String roles) {
         this.accessToken = accessToken;
         this.userId = userId;
         this.email = email;
-        this.role = role;
+        this.roles = roles;
     }
 }
