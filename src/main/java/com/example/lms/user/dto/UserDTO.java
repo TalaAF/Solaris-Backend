@@ -1,12 +1,13 @@
 package com.example.lms.user.dto;
 
-import com.example.lms.user.model.Role;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 /**
  * User Data Transfer Object (DTO)
@@ -33,4 +34,12 @@ public class UserDTO {
     private boolean isActive;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    public void setDepartmentId(Long id2) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'setDepartmentId'");
+    }
+    public void setDepartmentName(String name) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'setDepartmentName'");
+    }
 }

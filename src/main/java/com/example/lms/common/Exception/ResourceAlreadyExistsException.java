@@ -1,4 +1,4 @@
-package com.example.lms.common.Exception;
+package com.example.lms.common.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;

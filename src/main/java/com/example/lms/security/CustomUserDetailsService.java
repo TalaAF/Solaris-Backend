@@ -1,18 +1,22 @@
 package com.example.lms.security;
 
+import com.example.lms.security.model.Permission;
+import com.example.lms.security.model.Role;
 import com.example.lms.user.model.User;
 import com.example.lms.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Custom User Details Service

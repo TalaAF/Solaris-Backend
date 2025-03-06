@@ -2,6 +2,10 @@
 package com.example.lms.user.model;
 
 import com.example.lms.common.BaseEntity;
+
+import java.util.HashSet;
+import java.util.Set;
+
 import com.example.lms.Department.model.Department;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

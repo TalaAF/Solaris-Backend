@@ -1,6 +1,7 @@
 package com.example.lms.security.dto;
 
-import com.example.lms.user.model.Role;
+import java.util.HashSet;
+import java.util.Set;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

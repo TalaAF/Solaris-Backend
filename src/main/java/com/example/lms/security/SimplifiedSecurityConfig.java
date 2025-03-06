@@ -1,5 +1,6 @@
 package com.example.lms.security;
 
+import com.example.lms.security.filter.DynamicPermissionFilter;
 import com.example.lms.security.jwt.JwtAuthenticationFilter;
 import com.example.lms.security.jwt.JwtTokenProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
