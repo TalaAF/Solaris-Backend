@@ -1,4 +1,4 @@
-package com.example.lms.enrollment.dto;
+package com.example.lms.progress.dto;
 
 import java.time.LocalDateTime;
 

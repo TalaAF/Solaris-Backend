@@ -1,4 +1,4 @@
-package com.example.lms.enrollment.model;
+package com.example.lms.progress.model;
 
 import com.example.lms.course.model.Course;
 import com.example.lms.user.model.User;
@@ -40,6 +40,10 @@ public class Progress {
         this.course = course;
         this.progress = progress;
         this.lastUpdated = lastUpdated;
+    }
+
+    public Progress(Long studentId, Long courseId, Double progress2, LocalDateTime lastUpdated2) {
+        //TODO Auto-generated constructor stub
     }
 
     // Getters and Setters

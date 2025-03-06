@@ -1,6 +1,6 @@
-package com.example.lms.enrollment.repository;
+package com.example.lms.progress.repository;
 
-import com.example.lms.enrollment.model.Progress;
+import com.example.lms.progress.model.Progress;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

@@ -1,7 +1,7 @@
-package com.example.lms.enrollment.mapper;
+package com.example.lms.progress.mapper;
 
-import com.example.lms.enrollment.dto.ProgressDTO;
-import com.example.lms.enrollment.model.Progress;
+import com.example.lms.progress.dto.ProgressDTO;
+import com.example.lms.progress.model.Progress;
 
 public class ProgressMapper {
 

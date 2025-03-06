@@ -1,7 +1,7 @@
-package com.example.lms.enrollment.assembler;
+package com.example.lms.progress.assembler;
 
-import com.example.lms.enrollment.dto.ProgressDTO;
-import com.example.lms.enrollment.model.Progress;
+import com.example.lms.progress.dto.ProgressDTO;
+import com.example.lms.progress.model.Progress;
 import com.example.lms.course.model.Course;
 import com.example.lms.user.model.User;
 

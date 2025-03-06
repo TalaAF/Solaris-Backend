@@ -1,4 +1,4 @@
-package com.example.lms.enrollment.service;
+package com.example.lms.progress.service;
 
 import com.example.lms.enrollment.dto.ProgressDTO;
 import com.example.lms.enrollment.model.Progress;
