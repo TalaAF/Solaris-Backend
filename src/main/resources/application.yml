@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/my_database
+    url: jdbc:postgresql://localhost:5432/lmsdb
     username: postgres
-    password: MST
+    password: A!ciRche@postG
   jpa:
     hibernate:
       ddl-auto: update  
@@ -23,6 +23,8 @@ logging:
     io.jsonwebtoken: DEBUG
 
 # JWT Configuration
-jwt:
-  expiration: 86400000  # 24 hours in milliseconds
-        format_sql: true
+app:
+  jwt:
+    expiration-ms: 3600000
+    refresh-token:
+      expiration-ms: 604800000

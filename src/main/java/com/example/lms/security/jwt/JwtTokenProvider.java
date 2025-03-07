@@ -3,6 +3,8 @@ package com.example.lms.security.jwt;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -24,7 +26,8 @@ public class JwtTokenProvider {
 
     // Generate a secure key at startup - this key will be regenerated each time the app restarts
     private final SecretKey key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
-    private final long expirationTime = 86400000; // 24 hours
+    @Value("${app.jwt.expiration-ms:3600000}")
+    private long expirationTime; 
 
     /**
      * Generate a JWT token for an authenticated user
@@ -100,6 +103,9 @@ public class JwtTokenProvider {
                 .build()
                 .parseClaimsJws(token);
             return true;
+        } catch (ExpiredJwtException e) {
+            log.error("JWT token expired: {}", e.getMessage());
+            throw e;
         } catch (Exception e) {
             log.error("JWT validation error: {}", e.getMessage());
             return false;
@@ -113,4 +119,25 @@ public class JwtTokenProvider {
         UserDetails userDetails = getUserDetailsFromJWT(token);
         return new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());
     }
+
+    /**
+     * Get the expiration date from a token
+     */
+    public Date getExpirationDateFromToken(String token) {
+        Claims claims = Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+        return claims.getExpiration();
+    }
+    
+    /**
+     * Check if a token is expired
+     */
+    public boolean isTokenExpired(String token) {
+        Date expiration = getExpirationDateFromToken(token);
+        return expiration.before(new Date());
+    }
+
 }
