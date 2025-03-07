@@ -136,4 +136,14 @@ private ContentDTO convertToDTO(Content content) {
         }
         return ResponseEntity.notFound().build();
     }
+
+    @GetMapping("/{id}/preview")
+     public ResponseEntity<String> getContentPreview(@PathVariable Long id) {
+    Optional<Content> content = contentService.getContentById(id);
+    if (content.isPresent()) {
+        String preview = contentService.generatePreview(content.get().getDescription());
+        return ResponseEntity.ok(preview);
+    }
+    return ResponseEntity.notFound().build();
+}
 }
