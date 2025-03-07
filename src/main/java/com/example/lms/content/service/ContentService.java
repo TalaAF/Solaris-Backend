@@ -1,7 +1,9 @@
 package com.example.lms.content.service;
 
 import com.example.lms.content.model.Content;
+import com.example.lms.content.model.ContentVersion;
 import com.example.lms.content.repository.ContentRepository;
+import com.example.lms.content.repository.ContentVersionRepository;
 import com.example.lms.course.model.Course;
 import com.example.lms.course.repository.CourseRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +27,8 @@ public class ContentService {
 
     @Autowired
     private FileStorageService fileStorageService;
+
+    private ContentVersionRepository contentVersionRepository;
 
     // Create new content
     public Content createContent(Long courseId, MultipartFile file, String title, String description) {
@@ -62,14 +66,25 @@ public class ContentService {
         return contentRepository.findByCourseId(courseId);
     }
 
-    // Update existing content
-    public Optional<Content> updateContent(Long id, String title, String description) {
-        return contentRepository.findById(id).map(content -> {
-            if (title != null) content.setTitle(title);
-            if (description != null) content.setDescription(description);
-            return contentRepository.save(content);
-        });
-    }
+    // ContentService.java (Update)
+public Optional<Content> updateContent(Long id, String title, String description) {
+    return contentRepository.findById(id).map(content -> {
+        // Save current content as a version
+        ContentVersion version = new ContentVersion();
+        version.setTitle(content.getTitle());
+        version.setDescription(content.getDescription());
+        version.setFilePath(content.getFilePath());
+        version.setFileType(content.getFileType());
+        version.setFileSize(content.getFileSize());
+        version.setContent(content);
+        contentVersionRepository.save(version);
+
+        // Update the content
+        if (title != null) content.setTitle(title);
+        if (description != null) content.setDescription(description);
+        return contentRepository.save(content);
+    });
+}
 
     // Delete content
     public boolean deleteContent(Long id) {
