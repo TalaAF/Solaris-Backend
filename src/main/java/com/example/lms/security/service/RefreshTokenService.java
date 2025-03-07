@@ -37,6 +37,8 @@ public class RefreshTokenService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
         
+        refreshTokenRepository.deleteAllUserTokens(userId);
+
         // Check if user already has a valid refresh token
         Optional<RefreshToken> existingToken = refreshTokenRepository.findByUserAndRevokedFalse(user);
         if (existingToken.isPresent() && existingToken.get().isValid()) {

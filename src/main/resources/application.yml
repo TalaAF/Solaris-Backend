@@ -28,3 +28,5 @@ app:
     expiration-ms: 3600000
     refresh-token:
       expiration-ms: 604800000
+    password-reset:
+    token-expiration-minutes: 30
