@@ -30,6 +30,7 @@ public class ContentService {
 
     private ContentVersionRepository contentVersionRepository;
 
+
     // Create new content
     public Content createContent(Long courseId, MultipartFile file, String title, String description) {
         // Check if the course exists
@@ -96,4 +97,14 @@ public Optional<Content> updateContent(Long id, String title, String description
             return true;
         }).orElse(false);
     }
+
+    // ContentService.java (Add)
+public String generatePreview(String description) {
+    if (description == null || description.length() <= 100) {
+        return description;
+    }
+    return description.substring(0, 100) + "...";
+}
+
+
 }
