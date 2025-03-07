@@ -26,21 +26,21 @@ public class ContentService {
     @Autowired
     private FileStorageService fileStorageService;
 
-// Create new content
-public Content createContent(Long courseId, MultipartFile file, String title, String description) {
-// Check if the course exists
-Course course = courseRepository.findById(courseId)
+    // Create new content
+    public Content createContent(Long courseId, MultipartFile file, String title, String description) {
+        // Check if the course exists
+        Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new RuntimeException("Course not found"));
 
-// Upload the file and get its path
-String filePath = fileStorageService.storeFile(file);
+        // Upload the file and get its path
+        String filePath = fileStorageService.storeFile(file);
 
-// Extract metadata
-String fileType = metadataExtractor.extractFileType(file);
+        // Extract metadata
+        String fileType = metadataExtractor.extractFileType(file);
         long fileSize = metadataExtractor.extractFileSize(file);
 
-// Create the content object
-Content content = new Content();
+        // Create the content object
+        Content content = new Content();
         content.setTitle(title);
         content.setDescription(description);
         content.setFilePath(filePath);
@@ -48,45 +48,37 @@ Content content = new Content();
         content.setFileSize(fileSize);
         content.setCourse(course);
 
-// Save content to database
-return contentRepository.save(content);
-    }
-
-// Get content by ID
-public Content getContentById(Long id) {
-        return contentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Content not found"));
-    }
-
-// Get all content for a given course
-public List<Content> getContentsByCourseId(Long courseId) {
-        return contentRepository.findByCourseId(courseId);
-    }
-
-// Update existing content
-public Content updateContent(Long id, String title, String description) {
-        Content content = contentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Content not found"));
-
-        if (title != null) {
-            content.setTitle(title);
-        }
-        if (description != null) {
-            content.setDescription(description);
-        }
-
+        // Save content to database
         return contentRepository.save(content);
     }
 
+    // Get content by ID
+    public Optional<Content> getContentById(Long id) {
+        return contentRepository.findById(id);
+    }
+
+    // Get all content for a given course
+    public List<Content> getContentsByCourseId(Long courseId) {
+        return contentRepository.findByCourseId(courseId);
+    }
+
+    // Update existing content
+    public Optional<Content> updateContent(Long id, String title, String description) {
+        return contentRepository.findById(id).map(content -> {
+            if (title != null) content.setTitle(title);
+            if (description != null) content.setDescription(description);
+            return contentRepository.save(content);
+        });
+    }
+
     // Delete content
-    public void deleteContent(Long id) {
-        Content content = contentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Content not found"));
-
-// Delete the associated file from storage
-fileStorageService.deleteFile(content.getFilePath());
-
-// Delete content from database
-contentRepository.delete(content);
+    public boolean deleteContent(Long id) {
+        return contentRepository.findById(id).map(content -> {
+            // Delete the associated file from storage
+            fileStorageService.deleteFile(content.getFilePath());
+            // Delete content from database
+            contentRepository.delete(content);
+            return true;
+        }).orElse(false);
     }
 }

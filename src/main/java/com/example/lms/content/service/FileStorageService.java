@@ -41,6 +41,7 @@ public class FileStorageService {
 
     public String storeFile(MultipartFile file) {
         validateFileType(file);
+    
         try {
             Path targetLocation = this.fileStorageLocation.resolve(file.getOriginalFilename());
             Files.copy(file.getInputStream(), targetLocation);

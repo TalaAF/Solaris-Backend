@@ -28,7 +28,7 @@ public class Department {
     private String description;
 
     private String code;
-
+ 
     @OneToMany(mappedBy = "department", cascade = CascadeType.ALL)
     private List<Course> courses = new ArrayList<>();
 
