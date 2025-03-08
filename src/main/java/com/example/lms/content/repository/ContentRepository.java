@@ -19,4 +19,7 @@ List<Content> searchByKeyword(@Param("keyword") String keyword);
 
 List<Content> findByFileType(String fileType);
 List<Content> findByFileSizeGreaterThan(Long fileSize);
+
+@Query("SELECT c FROM Content c JOIN c.tags t WHERE t.name IN :tags")
+List<Content> findByTags(@Param("tags") List<String> tags);
 }
