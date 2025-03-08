@@ -35,8 +35,8 @@ public class ContentService {
 
     private ContentVersionRepository contentVersionRepository;
 
+    @Autowired
     private ContentAccessLogRepository contentAccessLogRepository;
-
 
     // Create new content
     public Content createContent(Long courseId, MultipartFile file, String title, String description) {

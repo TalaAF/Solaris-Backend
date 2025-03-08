@@ -51,8 +51,14 @@ public class ContentController {
    
     // Get content by ID
     @GetMapping("/{id}")
-    public ResponseEntity<EntityModel<ContentDTO>> getContentById(@PathVariable Long id, @RequestParam Long userId) {
-        contentService.logContentAccess(id, userId); // Log access
+    public ResponseEntity<EntityModel<ContentDTO>> getContentById(
+            @PathVariable Long id,
+            @RequestParam(required = false) Long userId) { // Make userId optional
+
+        if (userId != null) {
+            contentService.logContentAccess(id, userId); // // Check in if userId is provided
+        }
+    
         Optional<Content> content = contentService.getContentById(id);
         if (content.isPresent()) {
             ContentDTO contentDTO = contentService.convertToDTO(content.get());
@@ -65,7 +71,6 @@ public class ContentController {
     }
 
     // Get all content for a given course
-   // Get all content for a given course
    @GetMapping("/course/{courseId}")
    public ResponseEntity<CollectionModel<EntityModel<ContentDTO>>> getContentsByCourseId(@PathVariable Long courseId) {
        List<Content> contents = contentService.getContentsByCourseId(courseId);
