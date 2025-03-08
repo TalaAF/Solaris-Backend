@@ -9,12 +9,18 @@ import lombok.RequiredArgsConstructor;
 import com.example.lms.content.model.Content;
 import com.example.lms.content.model.ContentVersion;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
@@ -129,4 +135,17 @@ public class ContentController {
         List<ContentVersion> versions = contentService.getContentVersions(id);
         return ResponseEntity.ok(versions);
     }
+
+    
+  // Search content by keyword
+  @GetMapping("/search")
+  public ResponseEntity<Page<Content>> search(
+          @RequestParam String keyword,
+          @RequestParam(defaultValue = "0") int page,
+          @RequestParam(defaultValue = "10") int size) {
+      Pageable pageable = PageRequest.of(page, size);
+      Page<Content> result = contentService.searchByKeyword(keyword, pageable);
+      return ResponseEntity.ok(result);
+  }
+  
 }
