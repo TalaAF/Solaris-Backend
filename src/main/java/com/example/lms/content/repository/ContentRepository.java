@@ -16,4 +16,7 @@ public interface ContentRepository extends JpaRepository<Content, Long> {
 
     @Query("SELECT c FROM Content c WHERE CONCAT(c.title, ' ', c.description) LIKE %:keyword%")
 List<Content> searchByKeyword(@Param("keyword") String keyword);
+
+List<Content> findByFileType(String fileType);
+List<Content> findByFileSizeGreaterThan(Long fileSize);
 }
