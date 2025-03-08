@@ -3,6 +3,8 @@ package com.example.lms.security;
 import com.example.lms.security.filter.DynamicPermissionFilter;
 import com.example.lms.security.jwt.JwtAuthenticationFilter;
 import com.example.lms.security.jwt.JwtTokenProvider;
+import com.example.lms.security.oauth.CustomOAuth2UserService;
+import com.example.lms.security.oauth.OAuth2AuthenticationSuccessHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.http.HttpServletResponse;
@@ -14,6 +16,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import com.example.lms.security.oauth.OAuth2AuthenticationSuccessHandler;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -36,6 +39,8 @@ public class SimplifiedSecurityConfig {
     private final JwtTokenProvider tokenProvider;
     private final CustomUserDetailsService customUserDetailsService;
     private final DynamicPermissionFilter dynamicPermissionFilter;
+    private final CustomOAuth2UserService customOAuth2UserService;
+    private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
 
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter() {
@@ -69,18 +74,25 @@ public class SimplifiedSecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-        .csrf(csrf -> csrf.disable())
-        .cors(cors -> cors.disable())
-        .exceptionHandling(ex -> ex.authenticationEntryPoint(authenticationEntryPoint()))
-        .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(authorize -> authorize
-                // Public endpoints
-                .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/api/debug/**").permitAll()
-                .requestMatchers("/h2-console/**").permitAll()
-                // Protected endpoints
+        .cors().and().csrf().disable()
+            .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            .and()
+            .authorizeRequests()
+                .requestMatchers("/api/auth/**", "/oauth2/**").permitAll()
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
-            );
+            .and()
+            .oauth2Login()
+                .authorizationEndpoint()
+                    .baseUri("/oauth2/authorize")
+                .and()
+                .redirectionEndpoint()
+                    .baseUri("/oauth2/callback/*")
+                .and()
+                .userInfoEndpoint()
+                    .userService(customOAuth2UserService)
+                .and()
+                .successHandler(oAuth2AuthenticationSuccessHandler);
 
         // Allow H2 console
         http.headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable()));

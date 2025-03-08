@@ -16,7 +16,18 @@ spring:
       enabled: true
       max-file-size: 5MB
       max-request-size: 5MB
-
+  
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: your-google-client-id
+            client-secret: your-google-client-secret
+            scope:
+              - email
+              - profile
+              
 server:
   port: 8080
 
@@ -42,3 +53,5 @@ app:
       - image/png
       - image/gif
     max-file-size: 2097152
+
+    
