@@ -7,6 +7,7 @@ import com.example.lms.content.model.ContentVersion;
 import com.example.lms.content.repository.ContentAccessLogRepository;
 import com.example.lms.content.repository.ContentRepository;
 import com.example.lms.content.repository.ContentVersionRepository;
+import com.example.lms.content.repository.ModuleRepository;
 import com.example.lms.course.dto.CourseDTO;
 import com.example.lms.course.model.Course;
 import com.example.lms.course.repository.CourseRepository;
@@ -37,6 +38,8 @@ public class ContentService {
 
     @Autowired
     private ContentAccessLogRepository contentAccessLogRepository;
+
+    private ModuleRepository moduleRepository;
 
     // Create new content
     public Content createContent(Long courseId, MultipartFile file, String title, String description) {
@@ -155,6 +158,13 @@ public class ContentService {
         log.setUserId(userId);
         log.setAccessedAt(LocalDateTime.now());
         contentAccessLogRepository.save(log);
+    }
+
+    public Content assignContentToModule(Long contentId, Long moduleId) {
+        return contentRepository.findById(contentId).map(content -> {
+            moduleRepository.findById(moduleId).ifPresent(content::setModule);
+            return contentRepository.save(content);
+        }).orElseThrow(() -> new RuntimeException("Content not found"));
     }
 
 }

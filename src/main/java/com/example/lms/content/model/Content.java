@@ -11,7 +11,12 @@ import java.time.LocalDateTime;
 @Data
 @Entity
 @Table(name = "content")
+
 public class Content {
+
+    @ManyToOne
+@JoinColumn(name = "module_id")
+private Module module;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
