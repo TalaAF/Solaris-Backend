@@ -7,6 +7,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Entity
@@ -53,5 +54,14 @@ public class Content {
     @ManyToOne
     @JoinColumn(name = "module_id")
      private Module module;
+
+    // Relationship with the tags
+    @ManyToMany
+@JoinTable(
+    name = "content_tag",
+    joinColumns = @JoinColumn(name = "content_id"),
+    inverseJoinColumns = @JoinColumn(name = "tag_id")
+)
+private List<Tag> tags;
 
 }
