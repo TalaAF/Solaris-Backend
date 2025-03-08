@@ -19,6 +19,7 @@ public class Module {
 
     private String title;
     private String description;
+    private Integer order;
 
     @CreationTimestamp
     private LocalDateTime createdAt;

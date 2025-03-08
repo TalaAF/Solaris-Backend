@@ -37,4 +37,15 @@ public class ModuleService {
     public void deleteModule(Long id) {
         moduleRepository.deleteById(id);
     }
+    
+    public void reorderModules(List<Long> moduleIds) {
+        for (int i = 0; i < moduleIds.size(); i++) {
+            final int order = i + 1;
+            Long moduleId = moduleIds.get(i);
+            moduleRepository.findById(moduleId).ifPresent(module -> {
+                module.setOrder(order);
+                moduleRepository.save(module);
+            });
+        }
+    }
 }
