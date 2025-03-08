@@ -14,9 +14,7 @@ import java.time.LocalDateTime;
 
 public class Content {
 
-    @ManyToOne
-@JoinColumn(name = "module_id")
-private Module module;
+    private Integer order;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -50,4 +48,10 @@ private Module module;
     @ManyToOne
     @JoinColumn(name = "course_id", nullable = false)
     private Course course;
+
+    // Relationship with the module
+    @ManyToOne
+    @JoinColumn(name = "module_id")
+     private Module module;
+
 }
