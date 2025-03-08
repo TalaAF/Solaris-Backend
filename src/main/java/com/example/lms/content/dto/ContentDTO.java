@@ -15,10 +15,11 @@ public class ContentDTO extends RepresentationModel<ContentDTO> {
     private String createdAt;
     private String updatedAt;
     private CourseDTO course; // The DTO will be linked to the CourseDTO.
+    private String preview; // The preview field is added to the DTO.
 
     public ContentDTO() {}
 
-    public ContentDTO(Long id, String title, String description, String filePath, String fileType, long fileSize, String createdAt, String updatedAt, CourseDTO course) {
+    public ContentDTO(Long id, String title, String description, String filePath, String fileType, long fileSize, String createdAt, String updatedAt,String preview, CourseDTO course) {
         this.id = id;
         this.title = title;
         this.description = description;
@@ -28,5 +29,7 @@ public class ContentDTO extends RepresentationModel<ContentDTO> {
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.course = course;
+        
+
     }
 }
