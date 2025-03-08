@@ -176,4 +176,20 @@ public class ContentService {
         return contentRepository.findByTitleContainingOrDescriptionContaining(keyword, keyword, pageable);
     }
 
+    public List<Content> searchByKeywordWithRelevance(String keyword) {
+        List<Content> contents = contentRepository.searchByKeyword(keyword);
+        contents.sort((c1, c2) -> {
+            int score1 = calculateRelevanceScore(c1, keyword);
+            int score2 = calculateRelevanceScore(c2, keyword);
+            return Integer.compare(score2, score1); // Sort by relevance (descending)
+        });
+        return contents;
+    }
+    
+    private int calculateRelevanceScore(Content content, String keyword) {
+        int score = 0;
+        if (content.getTitle().contains(keyword)) score += 10;
+        if (content.getDescription().contains(keyword)) score += 5;
+        return score;
+    }
 }
