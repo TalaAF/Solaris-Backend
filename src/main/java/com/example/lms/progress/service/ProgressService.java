@@ -5,7 +5,6 @@ import com.example.lms.progress.model.Progress;
 import com.example.lms.progress.repository.ProgressRepository;
 import com.example.lms.progress.assembler.ProgressAssembler;
 import com.example.lms.common.Exception.ResourceNotFoundException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -13,11 +12,13 @@ import java.time.LocalDateTime;
 @Service
 public class ProgressService {
 
-    @Autowired
-    private ProgressRepository progressRepository;
+    private final ProgressRepository progressRepository;
+    private final ProgressAssembler progressAssembler;
 
-    @Autowired
-    private ProgressAssembler progressAssembler;
+    public ProgressService(ProgressRepository progressRepository, ProgressAssembler progressAssembler) {
+        this.progressRepository = progressRepository;
+        this.progressAssembler = progressAssembler;
+    }
 
     public ProgressDTO updateProgress(Long studentId, Long courseId, Double progress) {
         if (progress < 0 || progress > 100) {
