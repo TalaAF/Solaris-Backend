@@ -36,4 +36,14 @@ public class UserCreateRequest {
     private Set<String> roleNames = new HashSet<>();
 
     private String profilePicture;
+
+    private Long departmentId;
+
+    public Long getDepartmentId() {
+        return departmentId;
+    }
+    
+    public void setDepartmentId(Long departmentId) {
+        this.departmentId = departmentId;
+    }
 }

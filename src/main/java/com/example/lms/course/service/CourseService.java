@@ -6,9 +6,12 @@ import com.example.lms.course.model.Course;
 import com.example.lms.course.repository.CourseRepository;
 import com.example.lms.user.model.User;
 import com.example.lms.user.repository.UserRepository;
+import com.example.lms.Department.model.Department;
+import com.example.lms.Department.repository.DepartmentRepository;
 import com.example.lms.common.exception.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -21,6 +24,9 @@ public class CourseService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private DepartmentRepository departmentRepository;
 
     // Method to delete a course
     public void deleteCourse(Long id) {
@@ -44,8 +50,13 @@ public class CourseService {
         User instructor = userRepository.findByEmail(courseDTO.getInstructorEmail())
                 .orElseThrow(() -> new ResourceNotFoundException("Instructor not found"));
 
+        Department department = null;
+        if (courseDTO.getDepartmentId() != null) {
+            department = departmentRepository.findById(courseDTO.getDepartmentId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Department not found with id: " + courseDTO.getDepartmentId()));
+        }
         // Convert the DTO to entity
-        Course course = CourseMapper.toEntity(courseDTO, instructor);
+        Course course = CourseMapper.toEntity(courseDTO, instructor, department);
 
         // Save the course entity to the repository
         Course savedCourse = courseRepository.save(course);
@@ -74,11 +85,19 @@ public class CourseService {
         // Find the instructor by email
         User instructor = userRepository.findByEmail(courseDTO.getInstructorEmail())
                 .orElseThrow(() -> new ResourceNotFoundException("Instructor not found"));
-
+   
+        if (courseDTO.getDepartmentId() != null) {
+            Department department = departmentRepository.findById(courseDTO.getDepartmentId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Department not found with id: " + courseDTO.getDepartmentId()));
+            course.setDepartment(department);
+        }
         // Update course properties
         course.setTitle(courseDTO.getTitle());
         course.setDescription(courseDTO.getDescription());
         course.setInstructor(instructor);
+        if (courseDTO.getMaxCapacity() != null) {
+            course.setMaxCapacity(courseDTO.getMaxCapacity());
+        }
 
         // Save the updated course entity
         Course updatedCourse = courseRepository.save(course);
@@ -107,4 +126,15 @@ public class CourseService {
                       .map(CourseMapper::toDTO)
                       .collect(Collectors.toList());
     }
+
+    @Transactional(readOnly = true)
+public List<CourseDTO> getCoursesByDepartment(Long departmentId) {
+    Department department = departmentRepository.findById(departmentId)
+            .orElseThrow(() -> new ResourceNotFoundException("Department not found with id: " + departmentId));
+            
+    List<Course> courses = courseRepository.findByDepartment(department);
+    return courses.stream()
+            .map(CourseMapper::toDTO)
+            .collect(Collectors.toList());
+}
 }

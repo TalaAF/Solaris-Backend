@@ -6,8 +6,8 @@ import com.example.lms.course.assembler.CourseAssembler;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
-
 import java.util.List;
+
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 
 @RestController
@@ -38,6 +38,17 @@ public class CourseController {
     public ResponseEntity<CollectionModel<CourseDTO>> getAllCourses() {
         List<CourseDTO> courses = courseService.getAllCourses();
         return ResponseEntity.ok(CollectionModel.of(courses, linkTo(methodOn(CourseController.class).getAllCourses()).withSelfRel()));
+    }
+
+    @GetMapping("/department/{departmentId}")
+    public ResponseEntity<CollectionModel<CourseDTO>> getCoursesByDepartment(@PathVariable Long departmentId) {
+        List<CourseDTO> courses = courseService.getCoursesByDepartment(departmentId);
+        return ResponseEntity.ok(
+            CollectionModel.of(
+                courses, 
+                linkTo(methodOn(CourseController.class).getCoursesByDepartment(departmentId)).withSelfRel()
+            )
+        );
     }
 
     @PutMapping("/{id}")

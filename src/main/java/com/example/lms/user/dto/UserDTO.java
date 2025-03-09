@@ -29,17 +29,13 @@ public class UserDTO {
     private Long id;
     private String email;
     private String fullName;
+    private Long departmentId;
+    private String departmentName;
     private Set<String> roleNames;
     private String profilePicture;
     private boolean isActive;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    public void setDepartmentId(Long id2) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'setDepartmentId'");
-    }
-    public void setDepartmentName(String name) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'setDepartmentName'");
-    }
+    
+    
 }

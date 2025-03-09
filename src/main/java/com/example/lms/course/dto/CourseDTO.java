@@ -1,13 +1,21 @@
 package com.example.lms.course.dto;
 
+import java.util.List;
+import java.util.Set;
+
 import org.springframework.hateoas.RepresentationModel;
 
+import lombok.Data;
+@Data
 public class CourseDTO extends RepresentationModel<CourseDTO> {
     private Long id;
     private String title;
     private String description;
     private String instructorEmail; 
-
+    private Long departmentId;
+    private String departmentName;
+    private Integer maxCapacity; 
+    private List<Long> prerequisiteCourseIds; 
     public CourseDTO() {}
 
     public CourseDTO(Long id, String title, String description, String instructorEmail) {
@@ -28,4 +36,10 @@ public class CourseDTO extends RepresentationModel<CourseDTO> {
 
     public String getInstructorEmail() { return instructorEmail; } 
     public void setInstructorEmail(String instructorEmail) { this.instructorEmail = instructorEmail; }
+
+    public Long getDepartmentId() { return departmentId; }
+    public void setDepartmentId(Long departmentId) { this.departmentId = departmentId; }
+    
+    public String getDepartmentName() { return departmentName; }
+    public void setDepartmentName(String departmentName) { this.departmentName = departmentName; }
 }

@@ -1,12 +1,15 @@
 package com.example.lms.Department.model;
 
+import com.example.lms.course.model.Course;
 import com.example.lms.user.model.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -21,17 +24,22 @@ public class Department {
 
     @Column(nullable = false, unique = true)
     private String name;
-    
+
     private String description;
-    
+
     private String code;
-    
+ 
+    @OneToMany(mappedBy = "department", cascade = CascadeType.ALL)
+    private List<Course> courses = new ArrayList<>();
+
     @OneToMany(mappedBy = "department")
     private Set<User> users = new HashSet<>();
-    
+
     // For healthcare-specific functionality
     private String specialtyArea;
     private String headOfDepartment;
     private String contactInformation;
     private boolean isActive = true;
+
+    
 }
