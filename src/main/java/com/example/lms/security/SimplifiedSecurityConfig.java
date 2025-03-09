@@ -76,6 +76,9 @@ public class SimplifiedSecurityConfig {
                 .requestMatchers("/api/v1/auth/**").permitAll()
                 .requestMatchers("/api/v1/debug/**").permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
+                // File upload/download endpoints (restricted to ADMIN and INSTRUCTOR)
+            .requestMatchers("/api/files/upload").hasAnyRole("ADMIN", "INSTRUCTOR")
+            .requestMatchers("/api/files/download/**").hasAnyRole("ADMIN", "INSTRUCTOR")
                 // Protected endpoints
                 .anyRequest().authenticated()
             );

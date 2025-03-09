@@ -28,7 +28,7 @@ public class Department {
     private String description;
 
     private String code;
-
+ 
     @OneToMany(mappedBy = "department", cascade = CascadeType.ALL)
     private List<Course> courses = new ArrayList<>();
 
@@ -40,4 +40,6 @@ public class Department {
     private String headOfDepartment;
     private String contactInformation;
     private boolean isActive = true;
+
+    
 }
