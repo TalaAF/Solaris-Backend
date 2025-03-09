@@ -40,4 +40,6 @@ public class Department {
     private String headOfDepartment;
     private String contactInformation;
     private boolean isActive = true;
+
+    
 }

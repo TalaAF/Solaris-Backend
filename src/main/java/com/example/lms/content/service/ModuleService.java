@@ -41,24 +41,51 @@ public class ModuleService {
     }
     
     public void reorderModules(List<Long> moduleIds) {
-        for (int i = 0; i < moduleIds.size(); i++) {
-            final int order = i + 1;
-            Long moduleId = moduleIds.get(i);
-            moduleRepository.findById(moduleId).ifPresent(module -> {
-                module.setOrder(order);
-                moduleRepository.save(module);
-            });
+        List<Module> modules = moduleRepository.findAllById(moduleIds);
+        for (int i = 0; i < modules.size(); i++) {
+            modules.get(i).setSequence(i + 1);
         }
+        moduleRepository.saveAll(modules); // Batch update
     }
-
-    public void validateContentSequence(Long moduleId) {
+    
+    public boolean validateContentSequence(Long moduleId, List<Long> contentIds) {
         Module module = moduleRepository.findById(moduleId)
                 .orElseThrow(() -> new RuntimeException("Module not found"));
         List<Content> contents = module.getContents();
+                if (contents.size() != contentIds.size()) {
+            return false; }
+    
         for (int i = 0; i < contents.size(); i++) {
-            if (contents.get(i).getOrder() != i + 1) {
-                throw new RuntimeException("Invalid content sequence");
+            if (!contentIds.get(i).equals(contents.get(i).getId())) {
+                return false; 
             }
         }
+        
+        return true; 
     }
+    
+    
+    
+
+    public void reorderContents(Long moduleId, List<Long> contentIds) {
+        Module module = moduleRepository.findById(moduleId)
+                .orElseThrow(() -> new RuntimeException("Module not found"));
+    
+        List<Content> contents = module.getContents();
+        for (int i = 0; i < contentIds.size(); i++) {
+            Long contentId = contentIds.get(i);
+            final int index = i;
+            contents.stream()
+                    .filter(content -> content.getId().equals(contentId))
+                    .findFirst()
+                    .ifPresent(content -> {
+            // Update the order of the content within the module
+          module.setSequence(index + 1); // Using sequence from Module
+
+                    });
+        }
+        moduleRepository.save(module);
+    }
+
+    
 }

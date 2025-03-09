@@ -4,6 +4,7 @@ import com.example.lms.content.dto.ContentDTO;
 import com.example.lms.content.model.Content;
 import com.example.lms.content.model.ContentAccessLog;
 import com.example.lms.content.model.ContentVersion;
+import com.example.lms.content.model.Tag;
 import com.example.lms.content.repository.ContentAccessLogRepository;
 import com.example.lms.content.repository.ContentRepository;
 import com.example.lms.content.repository.ContentVersionRepository;
@@ -43,8 +44,9 @@ public class ContentService {
     @Autowired
     private ContentAccessLogRepository contentAccessLogRepository;
 
+    @Autowired
     private ModuleRepository moduleRepository;
-
+    
     // Create new content
     public Content createContent(Long courseId, MultipartFile file, String title, String description) {
         // Check if the course exists
@@ -191,5 +193,12 @@ public class ContentService {
         if (content.getTitle().contains(keyword)) score += 10;
         if (content.getDescription().contains(keyword)) score += 5;
         return score;
+    }
+
+    public Content addTagToContent(Long contentId, Tag tag) {
+        return contentRepository.findById(contentId).map(content -> {
+            content.getTags().add(tag);
+            return contentRepository.save(content);
+        }).orElseThrow(() -> new RuntimeException("Content not found"));
     }
 }

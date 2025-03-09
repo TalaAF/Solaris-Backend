@@ -3,6 +3,8 @@ package com.example.lms.course.model;
 import com.example.lms.Department.model.Department;
 import com.example.lms.content.model.Content;
 import com.example.lms.user.model.User;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -52,7 +54,10 @@ private Department department;
     }
 
        // Inverse relationship with content
+       @JsonIgnore
        @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
        private Set<Content> contents = new HashSet<>();
+
+       
    
 }

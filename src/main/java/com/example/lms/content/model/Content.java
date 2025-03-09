@@ -3,6 +3,8 @@ package com.example.lms.content.model;
 import jakarta.persistence.*;
 import lombok.Data;
 import com.example.lms.course.model.Course;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -15,8 +17,7 @@ import java.util.List;
 
 public class Content {
 
-    private Integer order;
-
+    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -45,23 +46,28 @@ public class Content {
     @Column
     private LocalDateTime updatedAt;
 
+    @Column(name = "content_order")
+     private Integer order;
+
     // Relationship with the course
     @ManyToOne
     @JoinColumn(name = "course_id", nullable = false)
     private Course course;
 
     // Relationship with the module
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "module_id")
      private Module module;
 
     // Relationship with the tags
     @ManyToMany
-@JoinTable(
+ @JoinTable(
     name = "content_tag",
     joinColumns = @JoinColumn(name = "content_id"),
     inverseJoinColumns = @JoinColumn(name = "tag_id")
 )
 private List<Tag> tags;
+
 
 }
