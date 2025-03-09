@@ -15,7 +15,7 @@ import java.util.Arrays;
 import java.util.List;
 
 @Service
-public class FileStorageService {
+public class ContentFileStorageService {
 
     @Value("${file.storage.location}")
     private String storageLocation;

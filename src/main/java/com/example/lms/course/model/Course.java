@@ -54,8 +54,7 @@ public class Course {
     )
     private Set<Course> prerequisites = new HashSet<>();
 
-    // Add Max Capacity field
-    @Column(nullable = false)
+    @Column(nullable = true) // Make it nullable
     private Integer maxCapacity;
 
     // Get the current number of students enrolled in the course

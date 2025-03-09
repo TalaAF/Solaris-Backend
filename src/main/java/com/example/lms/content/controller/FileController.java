@@ -1,7 +1,7 @@
 package com.example.lms.content.controller;
 
 import com.example.lms.content.service.ContentService;
-import com.example.lms.content.service.FileStorageService;
+import com.example.lms.content.service.ContentFileStorageService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
@@ -14,13 +14,13 @@ import org.springframework.web.multipart.MultipartFile;
 @RequestMapping("/api/files")
 public class FileController {
 
-    private final FileStorageService fileStorageService;
+    private final ContentFileStorageService fileStorageService;
     
     
     @Autowired
     private ContentService contentService;
     
-    public FileController(FileStorageService fileStorageService) {
+    public FileController(ContentFileStorageService fileStorageService) {
         this.fileStorageService = fileStorageService;
     }
 

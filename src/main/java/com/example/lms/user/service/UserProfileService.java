@@ -18,7 +18,7 @@ public class UserProfileService {
     
     private final UserProfileRepository userProfileRepository;
     private final UserRepository userRepository;
-    private final FileStorageService fileStorageService;
+    private final UserFileStorageService fileStorageService;
     
     @Transactional(readOnly = true)
     public UserProfileDTO.Response getUserProfile(Long userId) {

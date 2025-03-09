@@ -54,4 +54,11 @@ app:
       - image/gif
     max-file-size: 2097152
 
+# File storage location configuration
+file:
+  storage:
+    location: uploads
+
+
+
     

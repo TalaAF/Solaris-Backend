@@ -39,7 +39,7 @@ public class ContentService {
     private ContentMetadataExtractor metadataExtractor;
 
     @Autowired
-    private FileStorageService fileStorageService;
+    private ContentFileStorageService fileStorageService;
 
     @Autowired
     private ContentVersionRepository contentVersionRepository;

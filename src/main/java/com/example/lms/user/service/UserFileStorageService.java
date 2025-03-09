@@ -16,7 +16,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class FileStorageService {
+public class UserFileStorageService {
     
     @Value("${app.file-storage.upload-dir:uploads}")
     private String uploadDir;
