@@ -95,6 +95,9 @@ public class CourseService {
         course.setTitle(courseDTO.getTitle());
         course.setDescription(courseDTO.getDescription());
         course.setInstructor(instructor);
+        if (courseDTO.getMaxCapacity() != null) {
+            course.setMaxCapacity(courseDTO.getMaxCapacity());
+        }
 
         // Save the updated course entity
         Course updatedCourse = courseRepository.save(course);

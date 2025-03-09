@@ -10,6 +10,7 @@ import lombok.*;
 
 import java.util.HashSet;
 import java.util.Set;
+
 @Entity
 @Getter
 @Setter
@@ -29,8 +30,8 @@ public class Course {
     private String description;
 
     @ManyToOne
-@JoinColumn(name = "department_id")
-private Department department;
+    @JoinColumn(name = "department_id")
+    private Department department;
 
     @ManyToOne
     @JoinColumn(name = "instructor_id", nullable = false)
@@ -44,13 +45,30 @@ private Department department;
     )
     private Set<User> students = new HashSet<>();
 
-    // Adding the missing methods for title
+    // Add Prerequisites (self-referencing ManyToMany relationship)
+    @ManyToMany
+    @JoinTable(
+        name = "course_prerequisites",
+        joinColumns = @JoinColumn(name = "course_id"),
+        inverseJoinColumns = @JoinColumn(name = "prerequisite_course_id")
+    )
+    private Set<Course> prerequisites = new HashSet<>();
+
+    // Add Max Capacity field
+    @Column(nullable = false)
+    private Integer maxCapacity;
+
+    // Get the current number of students enrolled in the course
+    public int getCurrentEnrollment() {
+        return this.students.size();
+    }
+
     public String getTitle() {
-        return this.name;  // Return the name as the title
+        return this.name; // Return the name as the title
     }
 
     public void setTitle(String title) {
-        this.name = title;  // Set the name as the title
+        this.name = title; // Set the name as the title
     }
 
        // Inverse relationship with content

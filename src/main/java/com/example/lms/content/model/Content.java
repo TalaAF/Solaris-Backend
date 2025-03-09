@@ -1,5 +1,8 @@
 package com.example.lms.content.model;
 
+import com.example.lms.course.model.Course;
+import jakarta.persistence.*;
+import lombok.*;
 import jakarta.persistence.*;
 import lombok.Data;
 import com.example.lms.course.model.Course;
@@ -11,10 +14,12 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Data
 @Entity
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+@Data
 @Table(name = "content")
-
 public class Content {
 
     
@@ -22,7 +27,12 @@ public class Content {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private ContentType type; // VIDEO, ARTICLE, QUIZ, etc.
+
+    private int duration; // Duration in minutes (for videos/articles)
+
+   @Column(nullable = false)
     private String title;
 
     @Column(columnDefinition = "TEXT")
