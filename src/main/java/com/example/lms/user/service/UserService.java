@@ -1,5 +1,8 @@
 package com.example.lms.user.service;
 
+import com.example.lms.Department.model.Department;
+import com.example.lms.Department.repository.DepartmentRepository;
+import com.example.lms.common.exception.ResourceNotFoundException;
 import com.example.lms.user.dto.UserCreateRequest;
 import com.example.lms.user.dto.UserDTO;
 import com.example.lms.user.dto.UserUpdateRequest;
@@ -8,6 +11,8 @@ import com.example.lms.user.model.User;
 import com.example.lms.user.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -23,6 +28,8 @@ public class UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     
+    @Autowired
+    private DepartmentRepository departmentRepository;
     @Transactional(readOnly = true)
     public List<UserDTO> getAllUsers() {
         return userRepository.findAll().stream()
@@ -47,7 +54,13 @@ public class UserService {
         if (userRepository.existsByEmail(userCreateRequest.getEmail())) {
             throw new IllegalArgumentException("Email already in use");
         }
-        User user = userMapper.toEntity(userCreateRequest);
+
+        Department department = null;
+        if (userCreateRequest.getDepartmentId() != null) {
+            department = departmentRepository.findById(userCreateRequest.getDepartmentId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Department not found with id: " + userCreateRequest.getDepartmentId()));
+        }
+        User user = userMapper.toEntity(userCreateRequest, department);
         return userMapper.toDto(userRepository.save(user));
     }
     

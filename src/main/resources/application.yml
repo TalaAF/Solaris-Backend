@@ -5,8 +5,8 @@ spring:
     password: A!ciRche@postG
   jpa:
     hibernate:
-      ddl-auto: update  
-    show-sql: true  
+      ddl-auto: update  # Keep this as "update" to preserve schema
+    show-sql: true
     properties:
       hibernate:
         format_sql: true
