@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/lmsdb
+    url: jdbc:postgresql://localhost:5432/my_database
     username: postgres
-    password: A!ciRche@postG
+    password: MST
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -27,3 +27,8 @@ logging:
 # JWT Configuration
 jwt:
   expiration: 86400000  # 24 hours in milliseconds
+
+# File storage configuration
+file:
+  storage:
+    location: "file-storage"  
