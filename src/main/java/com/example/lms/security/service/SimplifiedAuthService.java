@@ -4,17 +4,29 @@ import com.example.lms.security.dto.AuthResponse;
 import com.example.lms.security.dto.LoginRequest;
 import com.example.lms.security.dto.RegisterRequest;
 import com.example.lms.security.jwt.JwtTokenProvider;
+import com.example.lms.security.model.RefreshToken;
+import com.example.lms.security.model.Role;
+import com.example.lms.security.repository.RoleRepository;
 import com.example.lms.user.model.User;
 import com.example.lms.user.repository.UserRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +37,8 @@ public class SimplifiedAuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider tokenProvider;
+    private final RoleRepository roleRepository;
+    private final RefreshTokenService refreshTokenService;
 
     @Transactional
     public AuthResponse login(LoginRequest loginRequest) {
@@ -40,10 +54,17 @@ public class SimplifiedAuthService {
         SecurityContextHolder.getContext().setAuthentication(authentication);
         String jwt = tokenProvider.generateToken(authentication);
         
-        User user = userRepository.findByEmail(loginRequest.getEmail()).orElseThrow();
+        User user = userRepository.findByEmail(loginRequest.getEmail()).orElseThrow(() -> new EntityNotFoundException("User not found"));
         
-        return new AuthResponse(jwt, user.getId(), user.getEmail(), user.getRole().name());
-    }
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
+        
+        // Join role names with comma for the response
+        String roleNames = user.getRoles().stream()
+                .map(Role::getName)
+                .collect(Collectors.joining(","));
+        
+                return new AuthResponse(jwt, refreshToken.getToken(), user.getId(), user.getEmail(), roleNames);
+            }
 
     @Transactional
     public AuthResponse register(RegisterRequest registerRequest) {
@@ -58,10 +79,25 @@ public class SimplifiedAuthService {
                 .fullName(registerRequest.getFullName())
                 .email(registerRequest.getEmail())
                 .password(passwordEncoder.encode(registerRequest.getPassword()))
-                .role(registerRequest.getRole())
                 .profilePicture(registerRequest.getProfilePicture())
                 .isActive(true)
                 .build();
+                
+        // Assign roles
+        Set<Role> roles = new HashSet<>();
+        if (registerRequest.getRoleNames() != null && !registerRequest.getRoleNames().isEmpty()) {
+            for (String roleName : registerRequest.getRoleNames()) {
+                Role role = roleRepository.findByName(roleName)
+                    .orElseThrow(() -> new EntityNotFoundException("Role not found: " + roleName));
+                roles.add(role);
+            }
+        } else {
+            // Default to STUDENT role if none specified
+            Role defaultRole = roleRepository.findByName("STUDENT")
+                .orElseThrow(() -> new EntityNotFoundException("Default role not found"));
+            roles.add(defaultRole);
+        }
+        user.setRoles(roles);
 
         User savedUser = userRepository.save(user);
         log.info("User created with ID: {}", savedUser.getId());
@@ -77,6 +113,35 @@ public class SimplifiedAuthService {
         SecurityContextHolder.getContext().setAuthentication(authentication);
         String jwt = tokenProvider.generateToken(authentication);
         
-        return new AuthResponse(jwt, savedUser.getId(), savedUser.getEmail(), savedUser.getRole().name());
-    }
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(savedUser.getId());
+        
+        // Join role names with comma for the response
+        String roleNames = savedUser.getRoles().stream()
+                .map(Role::getName)
+                .collect(Collectors.joining(","));
+        
+                return new AuthResponse(jwt, refreshToken.getToken(), savedUser.getId(), savedUser.getEmail(), roleNames);
+            }
+
+             /**
+     * Create an authentication token for a user
+     * Used when refreshing tokens
+     */
+   public Authentication createAuthenticationToken(User user) {
+    Set<GrantedAuthority> authorities = user.getRoles().stream()
+        .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
+        .collect(Collectors.toSet());
+            
+    UserDetails userDetails = org.springframework.security.core.userdetails.User
+        .withUsername(user.getEmail())
+        .password(user.getPassword())
+        .authorities(authorities)
+        .accountExpired(!user.isActive())
+        .accountLocked(!user.isActive())
+        .credentialsExpired(!user.isActive())
+        .disabled(!user.isActive())
+        .build();
+            
+    return new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+}
 }

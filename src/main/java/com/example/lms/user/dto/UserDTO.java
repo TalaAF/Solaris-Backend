@@ -1,12 +1,13 @@
 package com.example.lms.user.dto;
 
-import com.example.lms.user.model.Role;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 /**
  * User Data Transfer Object (DTO)
@@ -28,11 +29,13 @@ public class UserDTO {
     private Long id;
     private String email;
     private String fullName;
-    private Role role;
     private Long departmentId;
     private String departmentName;
+    private Set<String> roleNames;
     private String profilePicture;
     private boolean isActive;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    
+    
 }

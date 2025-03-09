@@ -1,10 +1,19 @@
 package com.example.lms.user.mapper;
 
 import com.example.lms.Department.model.Department;
+import com.example.lms.security.model.Role;
+import com.example.lms.security.repository.RoleRepository;
 import com.example.lms.user.dto.UserCreateRequest;
 import com.example.lms.user.dto.UserDTO;
 import com.example.lms.user.dto.UserUpdateRequest;
 import com.example.lms.user.model.User;
+
+import jakarta.persistence.EntityNotFoundException;
+
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -29,46 +38,72 @@ import org.springframework.stereotype.Component;
 public class UserMapper {
     
     private final PasswordEncoder passwordEncoder;
+    private final RoleRepository roleRepository;
     
-    public UserMapper(PasswordEncoder passwordEncoder) {
+    public UserMapper(PasswordEncoder passwordEncoder, RoleRepository roleRepository) {
         this.passwordEncoder = passwordEncoder;
+        this.roleRepository = roleRepository;
     }
     
     public UserDTO toDto(User user) {
         UserDTO dto = UserDTO.builder()
-        .id(user.getId())
-        .email(user.getEmail())
-        .fullName(user.getFullName())
-        .role(user.getRole())
-        .profilePicture(user.getProfilePicture())
-        .isActive(user.isActive())
-        .createdAt(user.getCreatedAt())
-        .updatedAt(user.getUpdatedAt())
-        .build();
+            .id(user.getId())
+            .email(user.getEmail())
+            .fullName(user.getFullName())
+            .profilePicture(user.getProfilePicture())
+            .isActive(user.isActive())
+            .createdAt(user.getCreatedAt())
+            .updatedAt(user.getUpdatedAt())
+            .build();
         
-// Add department info if available
-if (user.getDepartment() != null) {
-    dto.setDepartmentId(user.getDepartment().getId());
-    dto.setDepartmentName(user.getDepartment().getName());
-}
-
-return dto;
+        // Map roles to role names
+        if (user.getRoles() != null) {
+            dto.setRoleNames(user.getRoles().stream()
+                .map(Role::getName)
+                .collect(Collectors.toSet()));
+        }
+        
+        // Add department info if available
+        if (user.getDepartment() != null) {
+            dto.setDepartmentId(user.getDepartment().getId());
+            dto.setDepartmentName(user.getDepartment().getName());
+        }
+        
+        return dto;
     }
     
-    public User toEntity(UserCreateRequest request,Department department) {
-        User.UserBuilder builder = User.builder()
+    public User toEntity(UserCreateRequest request, Department department) {
+        User user = User.builder()
                 .email(request.getEmail())
                 .fullName(request.getFullName())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .role(request.getRole())
                 .profilePicture(request.getProfilePicture())
-                .isActive(true);
-                
-        if (department != null) {
-            builder.department(department);
-        }
+                .isActive(true)
+                .department(department)
+                .build();
         
-        return builder.build();
+        // Handle roles separately since they can't be directly set in the builder
+        Set<Role> roles = new HashSet<>();
+        if (request.getRoleNames() != null && !request.getRoleNames().isEmpty()) {
+            for (String roleName : request.getRoleNames()) {
+                Role role = roleRepository.findByName(roleName)
+                    .orElseThrow(() -> new EntityNotFoundException("Role not found: " + roleName));
+                roles.add(role);
+            }
+        } else {
+            // Default to STUDENT role if none specified
+            Role defaultRole = roleRepository.findByName("STUDENT")
+                .orElseThrow(() -> new EntityNotFoundException("Default role not found"));
+            roles.add(defaultRole);
+        }
+        user.setRoles(roles);
+        
+        return user;
+    }
+    
+    // Overloaded method for backward compatibility
+    public User toEntity(UserCreateRequest request) {
+        return toEntity(request, null);
     }
     
     public void updateEntity(User user, UserUpdateRequest request) {

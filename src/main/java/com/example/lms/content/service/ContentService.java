@@ -9,6 +9,7 @@ import com.example.lms.content.repository.ContentAccessLogRepository;
 import com.example.lms.content.repository.ContentRepository;
 import com.example.lms.content.repository.ContentVersionRepository;
 import com.example.lms.content.repository.ModuleRepository;
+import com.example.lms.content.repository.TagRepository;
 import com.example.lms.course.dto.CourseDTO;
 import com.example.lms.course.model.Course;
 import com.example.lms.course.repository.CourseRepository;
@@ -21,6 +22,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -39,6 +41,7 @@ public class ContentService {
     @Autowired
     private FileStorageService fileStorageService;
 
+    @Autowired
     private ContentVersionRepository contentVersionRepository;
 
     @Autowired
@@ -46,6 +49,9 @@ public class ContentService {
 
     @Autowired
     private ModuleRepository moduleRepository;
+
+    @Autowired
+     private TagRepository tagRepository;
     
     // Create new content
     public Content createContent(Long courseId, MultipartFile file, String title, String description) {
@@ -197,8 +203,32 @@ public class ContentService {
 
     public Content addTagToContent(Long contentId, Tag tag) {
         return contentRepository.findById(contentId).map(content -> {
-            content.getTags().add(tag);
+            Tag existingTag = tagRepository.findByName(tag.getName());
+            Tag tagToUse;
+            
+            if (existingTag == null) {
+                tagToUse = tagRepository.save(tag);
+            } else {
+                tagToUse = existingTag; 
+            }
+    
+            content.getTags().add(tagToUse);
+            
             return contentRepository.save(content);
         }).orElseThrow(() -> new RuntimeException("Content not found"));
+    }
+    
+    public List<Content> filterContents(String tags, String fileType) {
+        if (tags != null && fileType != null) {
+            List<String> tagsList = Arrays.asList(tags.split(","));
+            return contentRepository.findByTagsAndFileType(tagsList, fileType);
+        } else if (tags != null) {
+            List<String> tagsList = Arrays.asList(tags.split(","));
+            return contentRepository.findByTags(tagsList);
+        } else if (fileType != null) {
+            return contentRepository.findByFileType(fileType);
+        } else {
+            return contentRepository.findAll();
+        }
     }
 }

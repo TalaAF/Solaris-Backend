@@ -36,14 +36,14 @@ public class DepartmentController {
     }
     
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    
     public ResponseEntity<DepartmentDTO.Response> createDepartment(
             @Valid @RequestBody DepartmentDTO.Request request) {
         return new ResponseEntity<>(departmentService.createDepartment(request), HttpStatus.CREATED);
     }
     
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    
     public ResponseEntity<DepartmentDTO.Response> updateDepartment(
             @PathVariable Long id, 
             @Valid @RequestBody DepartmentDTO.Request request) {
@@ -51,7 +51,7 @@ public class DepartmentController {
     }
     
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    
     public ResponseEntity<Void> deleteDepartment(@PathVariable Long id) {
         departmentService.deleteDepartment(id);
         return ResponseEntity.noContent().build();

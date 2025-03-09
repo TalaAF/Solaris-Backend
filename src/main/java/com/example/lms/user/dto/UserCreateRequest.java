@@ -1,6 +1,7 @@
 package com.example.lms.user.dto;
 
-import com.example.lms.user.model.Role;
+import java.util.HashSet;
+import java.util.Set;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -20,7 +21,6 @@ import lombok.Data;
  * 
  * This class works with the UserController and UserService for creating new users.
  */
-
 @Data
 public class UserCreateRequest {
     @NotBlank(message = "Full name is required")
@@ -33,8 +33,7 @@ public class UserCreateRequest {
     @NotBlank(message = "Password is required")
     private String password;
 
-    @NotNull(message = "Role is required")
-    private Role role;
+    private Set<String> roleNames = new HashSet<>();
 
     private String profilePicture;
 

@@ -14,7 +14,15 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import com.example.lms.security.exception.TokenRefreshException;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.SignatureException;
+import io.jsonwebtoken.UnsupportedJwtException;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -59,6 +67,36 @@ public class GlobalExceptionHandler {
         errorResponse.put("message", ex.getMessage());
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
     }
+/**
+     * Handles token refresh exceptions
+     */
+    @ExceptionHandler(TokenRefreshException.class)
+    public ResponseEntity<Map<String, String>> handleTokenRefreshException(TokenRefreshException ex) {
+        Map<String, String> errorResponse = new HashMap<>();
+        errorResponse.put("message", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
+    }
+    
+    /**
+     * Handles JWT token expired exceptions
+     */
+    @ExceptionHandler(ExpiredJwtException.class)
+    public ResponseEntity<Map<String, String>> handleExpiredJwtException(ExpiredJwtException ex) {
+        Map<String, String> errorResponse = new HashMap<>();
+        errorResponse.put("message", "JWT token expired");
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+    }
+    
+    /**
+     * Handles invalid JWT token exceptions
+     */
+    @ExceptionHandler({MalformedJwtException.class, SignatureException.class, UnsupportedJwtException.class})
+    public ResponseEntity<Map<String, String>> handleInvalidJwtException(Exception ex) {
+        Map<String, String> errorResponse = new HashMap<>();
+        errorResponse.put("message", "Invalid JWT token");
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+    }
+    
     /**
      * Handles validation errors from @Valid annotations
      * Maps field-specific validation errors to their error messages

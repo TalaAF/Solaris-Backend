@@ -7,15 +7,17 @@ import lombok.Data;
 @AllArgsConstructor
 public class AuthResponse {
     private String accessToken;
+    private String refreshToken;
     private String tokenType = "Bearer";
     private Long userId;
     private String email;
-    private String role;
+    private String roles;
 
-    public AuthResponse(String accessToken, Long userId, String email, String role) {
+    public AuthResponse(String accessToken,String refreshToken, Long userId, String email, String roles) {
         this.accessToken = accessToken;
+        this.refreshToken = refreshToken;
         this.userId = userId;
         this.email = email;
-        this.role = role;
+        this.roles = roles;
     }
 }

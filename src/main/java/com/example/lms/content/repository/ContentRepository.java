@@ -26,4 +26,8 @@ List<Content> findByFileSizeGreaterThan(Long fileSize);
 List<Content> findByTags(@Param("tags") List<String> tags);
 
 Page<Content> findByTitleContainingOrDescriptionContaining(String title, String description, Pageable pageable);
+
+@Query("SELECT c FROM Content c JOIN c.tags t WHERE t.name IN :tags AND c.fileType = :fileType")
+List<Content> findByTagsAndFileType(@Param("tags") List<String> tags, @Param("fileType") String fileType);
+
 }

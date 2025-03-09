@@ -1,18 +1,22 @@
 package com.example.lms.security;
 
+import com.example.lms.security.model.Permission;
+import com.example.lms.security.model.Role;
 import com.example.lms.user.model.User;
 import com.example.lms.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Custom User Details Service
@@ -53,13 +57,35 @@ public class CustomUserDetailsService implements UserDetailsService {
                    if (!user.isActive()) {
         throw new LockedException("User account is locked");
     }
+
+     // Collect authorities from all roles and permissions
+     Set<GrantedAuthority> authorities = new HashSet<>();
+    
+     for (Role role : user.getRoles()) {
+        // Skip inactive roles
+        if (!role.isActive()) {
+            continue;
+        }
+        
+         // Add role as an authority with ROLE_ prefix
+         authorities.add(new SimpleGrantedAuthority("ROLE_" + role.getName()));
+         
+         // Add each permission as an authority
+         for (Permission permission : role.getPermissions()) {
+             // Skip inactive permissions
+             if (!permission.isActive()) {
+                continue;
+            }
+             authorities.add(new SimpleGrantedAuthority(permission.getName()));
+         }
+     }
         // Convert our User entity to Spring Security's UserDetails
         return org.springframework.security.core.userdetails.User
                 .withUsername(user.getEmail())
                 .password(user.getPassword())  // Already encoded password
                 // Convert our role to Spring Security role with "ROLE_" prefix
                 // This prefix is required for @PreAuthorize annotations to work with hasRole()
-                .authorities(Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole().name())))
+                .authorities(authorities)
                 // Set account status based on isActive flag
                 .accountExpired(!user.isActive())
                 .accountLocked(!user.isActive())
