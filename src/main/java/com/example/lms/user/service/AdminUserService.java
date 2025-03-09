@@ -1,6 +1,6 @@
 package com.example.lms.user.service;
 
-import com.example.lms.common.exception.ResourceNotFoundException;
+import com.example.lms.common.Exception.ResourceNotFoundException;
 import com.example.lms.security.dto.RoleDTO;
 import com.example.lms.security.model.Role;
 import com.example.lms.security.repository.RoleRepository;

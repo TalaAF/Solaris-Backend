@@ -4,7 +4,7 @@ import com.example.lms.progress.dto.ProgressDTO;
 import com.example.lms.progress.model.Progress;
 import com.example.lms.progress.repository.ProgressRepository;
 import com.example.lms.progress.assembler.ProgressAssembler;
-import com.example.lms.common.exception.ResourceNotFoundException;
+import com.example.lms.common.Exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

@@ -2,7 +2,7 @@ package com.example.lms.progress.service;
 
 import com.example.lms.progress.model.ContentProgress;
 import com.example.lms.progress.repository.ContentProgressRepository;
-import com.example.lms.common.exception.ResourceNotFoundException;
+import com.example.lms.common.Exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

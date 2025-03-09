@@ -1,6 +1,6 @@
 package com.example.lms.enrollment.service;
 
-import com.example.lms.common.exception.ResourceNotFoundException;
+import com.example.lms.common.Exception.ResourceNotFoundException;
 import com.example.lms.enrollment.assembler.EnrollmentAssembler;
 import com.example.lms.enrollment.dto.EnrollmentDTO;
 import com.example.lms.enrollment.mapper.EnrollmentMapper;

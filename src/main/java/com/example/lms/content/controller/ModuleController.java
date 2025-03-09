@@ -76,7 +76,11 @@ public ResponseEntity<String> validateSequence(@PathVariable Long moduleId, @Req
         return ResponseEntity.badRequest().body("The sequence is incorrect.");
     }
 }
-
+@GetMapping("/{moduleId}/contents-order")
+public ResponseEntity<List<Content>> getContentsOrder(@PathVariable Long moduleId) {
+    List<Content> contents = moduleService.getContentsOrder(moduleId); // استدعاء خدمة للحصول على ترتيب المحتويات
+    return ResponseEntity.ok(contents);
+}
 
 
 }

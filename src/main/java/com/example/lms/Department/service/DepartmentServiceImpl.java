@@ -3,8 +3,8 @@ package com.example.lms.Department.service;
 import com.example.lms.Department.dto.DepartmentDTO;
 import com.example.lms.Department.model.Department;
 import com.example.lms.Department.repository.DepartmentRepository;
-import com.example.lms.common.exception.ResourceAlreadyExistsException;
-import com.example.lms.common.exception.ResourceNotFoundException;
+import com.example.lms.common.Exception.ResourceAlreadyExistsException;
+import com.example.lms.common.Exception.ResourceNotFoundException;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

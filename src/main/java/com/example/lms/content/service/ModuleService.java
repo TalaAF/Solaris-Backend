@@ -5,10 +5,13 @@ import com.example.lms.content.repository.ModuleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.example.lms.common.Exception.ResourceNotFoundException;
 import com.example.lms.content.model.Content;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class ModuleService {
@@ -87,5 +90,14 @@ public class ModuleService {
         moduleRepository.save(module);
     }
 
+
+    public List<Content> getContentsOrder(Long moduleId) {
+        Module module = moduleRepository.findById(moduleId)
+                .orElseThrow(() -> new ResourceNotFoundException("Module not found with id " + moduleId));
+
+        return module.getContents().stream()
+                .sorted(Comparator.comparingInt(content -> content.getModule().getSequence())) // ترتيب باستخدام sequence في Module
+                .collect(Collectors.toList());
+    }
     
 }

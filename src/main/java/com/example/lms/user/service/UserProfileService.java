@@ -1,7 +1,7 @@
 package com.example.lms.user.service;
 
-import com.example.lms.common.exception.ResourceAlreadyExistsException;
-import com.example.lms.common.exception.ResourceNotFoundException;
+import com.example.lms.common.Exception.ResourceAlreadyExistsException;
+import com.example.lms.common.Exception.ResourceNotFoundException;
 import com.example.lms.user.dto.UserProfileDTO;
 import com.example.lms.user.model.User;
 import com.example.lms.user.model.UserProfile;

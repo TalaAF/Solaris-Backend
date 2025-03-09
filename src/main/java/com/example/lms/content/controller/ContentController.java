@@ -145,9 +145,11 @@ public class ContentController {
           @RequestParam(defaultValue = "10") int size) {
       Pageable pageable = PageRequest.of(page, size);
       Page<Content> result = contentService.searchByKeyword(keyword, pageable);
-      return ResponseEntity.ok(result);
-  }
-
-  
-  
-}
+      return ResponseEntity.ok(result);}
+    
+      @GetMapping("/filter")
+      public List<Content> filterContents(@RequestParam(required = false) String tags, 
+                                          @RequestParam(required = false) String fileType) {
+          return contentService.filterContents(tags, fileType);
+      }
+    }

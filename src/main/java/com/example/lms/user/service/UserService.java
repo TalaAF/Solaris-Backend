@@ -2,7 +2,7 @@ package com.example.lms.user.service;
 
 import com.example.lms.Department.model.Department;
 import com.example.lms.Department.repository.DepartmentRepository;
-import com.example.lms.common.exception.ResourceNotFoundException;
+import com.example.lms.common.Exception.ResourceNotFoundException;
 import com.example.lms.user.dto.UserCreateRequest;
 import com.example.lms.user.dto.UserDTO;
 import com.example.lms.user.dto.UserUpdateRequest;
