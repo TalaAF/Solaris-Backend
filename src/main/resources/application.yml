@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/my_new_database
+    url: jdbc:postgresql://localhost:5432/lmsdb
     username: postgres
-    password: MST
+    password: A!ciRche@postG
   jpa:
     hibernate:
       ddl-auto: update  # Keep this as "update" to preserve schema
