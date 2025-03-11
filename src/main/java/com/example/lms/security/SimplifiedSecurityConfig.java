@@ -1,5 +1,6 @@
 package com.example.lms.security;
 
+import com.example.lms.security.exception.JwtAuthenticationExceptionHandler;
 import com.example.lms.security.filter.DynamicPermissionFilter;
 import com.example.lms.security.jwt.JwtAuthenticationFilter;
 import com.example.lms.security.jwt.JwtTokenProvider;
@@ -11,6 +12,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Map;
+import java.util.Arrays;
 import java.util.HashMap;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,12 +22,16 @@ import com.example.lms.security.oauth.OAuth2AuthenticationSuccessHandler;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 /**
  * Simplified Security Configuration
@@ -41,6 +47,7 @@ public class SimplifiedSecurityConfig {
     private final DynamicPermissionFilter dynamicPermissionFilter;
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
+     private final JwtAuthenticationExceptionHandler jwtAuthenticationExceptionHandler;
 
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter() {
@@ -49,7 +56,7 @@ public class SimplifiedSecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+        return new BCryptPasswordEncoder(12);// Increased strength (default is 10)
     }
 
     @Bean
@@ -64,45 +71,83 @@ public class SimplifiedSecurityConfig {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             
             Map<String, String> error = new HashMap<>();
+            error.put("status", "error");
             error.put("message", authException.getMessage());
+            error.put("path", request.getRequestURI());
             
             String json = new ObjectMapper().writeValueAsString(error);
             response.getWriter().write(json);
         };
     }
 
+     @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000", "https://yourdomain.com")); // Add your frontend URLs
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With"));
+        configuration.setExposedHeaders(Arrays.asList("Authorization"));
+        configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L); // 1 hour
+        
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-        .cors().and().csrf().disable()
-            .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            .and()//don't use deprecated methods
-            .authorizeRequests()
+            // Enable CORS and disable CSRF
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .csrf(AbstractHttpConfigurer::disable)
+            
+            // Set session management to stateless
+            .sessionManagement(session -> 
+                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            
+            // Set unauthorized requests exception handler
+            .exceptionHandling(exception -> 
+                exception.authenticationEntryPoint(authenticationEntryPoint()))
+            
+            // Set permissions on endpoints
+            .authorizeHttpRequests(auth -> auth
+                // Public endpoints
                 .requestMatchers("/api/auth/**", "/oauth2/**").permitAll()
+                .requestMatchers("/api/public/**").permitAll()
+                .requestMatchers("/api/health/**").permitAll()
+                .requestMatchers("/api/swagger-ui/**", "/api/v3/api-docs/**").permitAll()
+                // Admin endpoints
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                // All other endpoints need authentication
                 .anyRequest().authenticated()
-            .and()
-            .oauth2Login()
-                .authorizationEndpoint()
-                    .baseUri("/oauth2/authorize")
-                .and()
-                .redirectionEndpoint()
-                    .baseUri("/oauth2/callback/*")
-                .and()
-                .userInfoEndpoint()
-                    .userService(customOAuth2UserService)
-                .and()
-                .successHandler(oAuth2AuthenticationSuccessHandler);
+            )
+            
+            // OAuth2 configuration
+            .oauth2Login(oauth2 -> oauth2
+                .authorizationEndpoint(endpoint -> 
+                    endpoint.baseUri("/oauth2/authorize"))
+                .redirectionEndpoint(endpoint -> 
+                    endpoint.baseUri("/oauth2/callback/*"))
+                .userInfoEndpoint(endpoint -> 
+                    endpoint.userService(customOAuth2UserService))
+                .successHandler(oAuth2AuthenticationSuccessHandler)
+            );
 
-        // Allow H2 console
-        http.headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable()));
-
-        // Add JWT filter
+        // Add JWT exception handler before JWT filter
+        http.addFilterBefore(jwtAuthenticationExceptionHandler, UsernamePasswordAuthenticationFilter.class);
+        
+        // Add JWT filter before UsernamePasswordAuthenticationFilter
         http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
-
+        
+        // Add dynamic permission filter after JWT filter
         http.addFilterAfter(dynamicPermissionFilter, JwtAuthenticationFilter.class);
         
+        // For H2 console, if needed in development (disable in production)
+        http.headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable()));
+        
         return http.build();
+    
     }
 
     
