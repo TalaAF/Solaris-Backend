@@ -37,13 +37,13 @@ public class RefreshTokenService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
         
-        refreshTokenRepository.deleteAllUserTokens(userId);
+        // refreshTokenRepository.deleteAllUserTokens(userId);
 
-        // Check if user already has a valid refresh token
-        Optional<RefreshToken> existingToken = refreshTokenRepository.findByUserAndRevokedFalse(user);
-        if (existingToken.isPresent() && existingToken.get().isValid()) {
-            return existingToken.get();
-        }
+        // // Check if user already has a valid refresh token
+        // Optional<RefreshToken> existingToken = refreshTokenRepository.findByUserAndRevokedFalse(user);
+        // if (existingToken.isPresent() && existingToken.get().isValid()) {
+        //     return existingToken.get();
+        // }
         
         // Revoke any existing tokens
         refreshTokenRepository.revokeAllUserTokens(userId);
@@ -104,6 +104,16 @@ public class RefreshTokenService {
         log.info("Revoked all refresh tokens for user ID: {}", userId);
     }
     
+     /**
+     * Delete all tokens for a specific user
+     *
+     * @param userId The user ID
+     */
+    @Transactional
+    public void deleteAllUserTokens(Long userId) {
+        refreshTokenRepository.deleteAllUserTokens(userId);
+        log.debug("Deleted all refresh tokens for user ID: {}", userId);
+    }
     /**
      * Scheduled task to clean up expired tokens
      * Runs once a day at midnight

@@ -41,9 +41,11 @@ logging:
 # JWT Configuration
 app:
   jwt:
+    secret: S0MeSecUrEanDS4feKeYf0rJWTT0beUsed1nPr0duct10n
     expiration-ms: 3600000
     refresh-token:
       expiration-ms: 604800000
+    issuer: lms-application
     password-reset:
     token-expiration-minutes: 30
   file-storage:
