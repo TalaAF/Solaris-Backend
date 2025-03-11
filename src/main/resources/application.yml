@@ -22,7 +22,7 @@ spring:
       client:
         registration:
           google:
-            client-id: your-google-client-id
+            client-id: your-google-client-id //I have to make it on google console
             client-secret: your-google-client-secret
             scope:
               - email

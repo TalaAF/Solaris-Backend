@@ -76,7 +76,7 @@ public class SimplifiedSecurityConfig {
         http
         .cors().and().csrf().disable()
             .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            .and()
+            .and()//don't use deprecated methods
             .authorizeRequests()
                 .requestMatchers("/api/auth/**", "/oauth2/**").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
