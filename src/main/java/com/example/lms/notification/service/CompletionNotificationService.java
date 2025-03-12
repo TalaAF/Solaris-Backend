@@ -10,16 +10,25 @@ import java.util.List;
 
 @Service
 public class CompletionNotificationService {
-
     @Autowired
-    private CompletionNotificationRepository notificationRepository;
-
+    private CompletionNotificationRepository notificationRepository; // Injected repository
+    
+    @Autowired
+    private EmailService emailService;
+    
     public void sendCompletionNotification(User student, Course course, String message) {
         CompletionNotification notification = new CompletionNotification();
         notification.setStudent(student);
         notification.setCourse(course);
         notification.setMessage(message);
-        notificationRepository.save(notification);
+        
+        // Save notification using repository instance
+        notificationRepository.save(notification); 
+    
+        // Send email notification
+        String subject = "Course Completion Notification";
+        String emailMessage = "Dear " + student.getFullName() + ",\n\n" + message;
+        emailService.sendEmail(student.getEmail(), subject, emailMessage);
     }
 
     public List<CompletionNotification> getNotificationsForStudent(Long studentId) {
