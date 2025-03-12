@@ -114,7 +114,7 @@ public class UserService {
         User user = userRepository.findByEmail(email)
         .orElseThrow(() -> new EntityNotFoundException("User not found with email: " + email));
 
-        if (user != null && user.checkPassword(password)) {
+        if (user != null && user.checkPassword(password, null)) {
             // Log successful login
             logService.logActivity(user, "LOGIN", "User logged in successfully");
             return true;
