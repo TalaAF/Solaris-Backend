@@ -46,4 +46,5 @@ public class User extends BaseEntity {
     @ManyToOne
     @JoinColumn(name = "department_id")
     private Department department; // Relationship with Department
+    
 }

@@ -3,6 +3,7 @@ package com.example.lms.user.service;
 import com.example.lms.Department.model.Department;
 import com.example.lms.Department.repository.DepartmentRepository;
 import com.example.lms.common.Exception.ResourceNotFoundException;
+import com.example.lms.logging.service.UserActivityLogService;
 import com.example.lms.user.dto.UserCreateRequest;
 import com.example.lms.user.dto.UserDTO;
 import com.example.lms.user.dto.UserUpdateRequest;
@@ -30,6 +31,9 @@ public class UserService {
     
     @Autowired
     private DepartmentRepository departmentRepository;
+    @Autowired
+    private UserActivityLogService logService;
+
     @Transactional(readOnly = true)
     public List<UserDTO> getAllUsers() {
         return userRepository.findAll().stream()
@@ -105,5 +109,16 @@ public class UserService {
                 .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + id));
         user.setActive(true);
         userRepository.save(user);
+    }
+    public boolean authenticateUser(String email, String password) {
+        User user = userRepository.findByEmail(email)
+        .orElseThrow(() -> new EntityNotFoundException("User not found with email: " + email));
+
+        if (user != null && user.checkPassword(password)) {
+            // Log successful login
+            logService.logActivity(user, "LOGIN", "User logged in successfully");
+            return true;
+        }
+        return false;
     }
 }
