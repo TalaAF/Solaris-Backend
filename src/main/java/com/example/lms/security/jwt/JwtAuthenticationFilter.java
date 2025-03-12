@@ -4,13 +4,20 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
+import com.example.lms.security.jwt.JwtTokenProvider;
+import com.example.lms.security.service.RefreshTokenService;
+import com.example.lms.user.repository.UserRepository;
 
+import com.example.lms.user.model.User;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
@@ -20,9 +27,12 @@ import java.util.*;
  * Simplified JWT Authentication Filter
  */
 @Slf4j
+@RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider tokenProvider;
+    private final UserRepository userRepository;
+    private final RefreshTokenService refreshTokenService;
 
     private static final List<String> PUBLIC_PATHS = Arrays.asList(
         "/api/auth/login",
@@ -32,39 +42,47 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         "/api/auth/reset-password"
 );
 
-    public JwtAuthenticationFilter(JwtTokenProvider tokenProvider) {
-        this.tokenProvider = tokenProvider;
-    }
+    
 
     @Override
-    protected void doFilterInternal(
-            @NonNull HttpServletRequest request,
-            @NonNull HttpServletResponse response,
-            @NonNull FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
         
-                try {
-                    if (shouldSkipFilter(request)) {
-                        filterChain.doFilter(request, response);
-                        return;
-                    }
-
+        try {
             String jwt = getJwtFromRequest(request);
-            log.debug("JWT in request: {}", jwt != null ? "Present" : "Absent");
-
-            if (StringUtils.hasText(jwt) && tokenProvider.validateToken(jwt)) {
-                Authentication auth = tokenProvider.getAuthentication(jwt);
-                SecurityContextHolder.getContext().setAuthentication(auth);
-                log.debug("Set authentication in Security Context");
-            }else if (StringUtils.hasText(jwt)) {
-                log.debug("Invalid JWT token");
+            
+            if (StringUtils.hasText(jwt)) {
+                // Basic validation (signature, expiration)
+                if (tokenProvider.validateToken(jwt)) {
+                    // Extract user info from token
+                    Long userId = tokenProvider.getUserIdFromToken(jwt);
+                    Long tokenVersion = tokenProvider.getTokenVersionFromToken(jwt);
+                    
+                    // Get user from database to check current token version
+                    Optional<User> userOpt = userRepository.findById(userId);
+                    
+                    if (userOpt.isPresent()) {
+                        User user = userOpt.get();
+                        
+                        // Check token version matches current user version and user has active refresh token
+                        if (user.getTokenVersion() == tokenVersion && 
+                                refreshTokenService.isUserActivelyLoggedIn(userId)) {
+                            
+                            Authentication auth = tokenProvider.getAuthentication(jwt);
+                            SecurityContextHolder.getContext().setAuthentication(auth);
+                            log.debug("Set authentication in Security Context");
+                        } else {
+                            log.debug("Token is outdated or user logged out");
+                        }
+                    }
+                }
             }
         } catch (Exception ex) {
             log.error("Could not set authentication in security context", ex);
         }
-
+        
         filterChain.doFilter(request, response);
     }
-
     private String getJwtFromRequest(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {

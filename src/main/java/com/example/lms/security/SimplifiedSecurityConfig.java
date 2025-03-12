@@ -6,6 +6,8 @@ import com.example.lms.security.jwt.JwtAuthenticationFilter;
 import com.example.lms.security.jwt.JwtTokenProvider;
 import com.example.lms.security.oauth.CustomOAuth2UserService;
 import com.example.lms.security.oauth.OAuth2AuthenticationSuccessHandler;
+import com.example.lms.security.service.RefreshTokenService;
+import com.example.lms.user.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.http.HttpServletResponse;
@@ -48,10 +50,12 @@ public class SimplifiedSecurityConfig {
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
      private final JwtAuthenticationExceptionHandler jwtAuthenticationExceptionHandler;
+    private final UserRepository userRepository;
+    private final RefreshTokenService refreshTokenService;
 
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter() {
-        return new JwtAuthenticationFilter(tokenProvider);
+        return new JwtAuthenticationFilter(tokenProvider, userRepository, refreshTokenService);
     }
 
     @Bean

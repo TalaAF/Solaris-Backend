@@ -2,7 +2,9 @@ package com.example.lms.security.service;
 
 import com.example.lms.security.dto.AuthResponse;
 import com.example.lms.security.dto.LoginRequest;
+import com.example.lms.security.dto.LogoutRequest;
 import com.example.lms.security.dto.RegisterRequest;
+import com.example.lms.security.exception.TokenRefreshException;
 import com.example.lms.security.jwt.JwtTokenProvider;
 import com.example.lms.security.model.RefreshToken;
 import com.example.lms.security.model.Role;
@@ -173,4 +175,34 @@ public class SimplifiedAuthService {
 
         return new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
     }
+
+    @Transactional
+public boolean logout(LogoutRequest logoutRequest) {
+    log.info("Processing logout request");
+    
+    try {
+        // Get token from request
+        String refreshToken = logoutRequest.getRefreshToken();
+        
+        // Find the token
+        RefreshToken token = refreshTokenService.findByToken(refreshToken)
+            .orElseThrow(() -> new TokenRefreshException(refreshToken, "Refresh token not found"));
+            
+        // Get user
+        User user = token.getUser();
+        
+        // Increment token version to invalidate all existing tokens
+        user.incrementTokenVersion();
+        userRepository.save(user);
+        
+        // Revoke all refresh tokens
+        refreshTokenService.revokeAllUserTokens(user.getId());
+        
+        log.info("User {} successfully logged out", user.getEmail());
+        return true;
+    } catch (Exception e) {
+        log.error("Error during logout: {}", e.getMessage());
+        return false;
+    }
+}
 }

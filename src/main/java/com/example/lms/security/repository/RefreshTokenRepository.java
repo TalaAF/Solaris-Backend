@@ -38,5 +38,7 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
 
     long countByUserId(Long userId);
 
+    boolean existsByUserIdAndRevokedFalse(Long userId);
+    
     List<RefreshToken> findByUserId(Long userId);
 }

@@ -32,33 +32,38 @@ public class RefreshTokenService {
      * If a valid refresh token already exists, return it
      * Otherwise create a new one
      */
+   
     @Transactional
-    public RefreshToken createRefreshToken(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
-        
-        // refreshTokenRepository.deleteAllUserTokens(userId);
-
-        // // Check if user already has a valid refresh token
-        // Optional<RefreshToken> existingToken = refreshTokenRepository.findByUserAndRevokedFalse(user);
-        // if (existingToken.isPresent() && existingToken.get().isValid()) {
-        //     return existingToken.get();
-        // }
-        
-        // Revoke any existing tokens
-        refreshTokenRepository.revokeAllUserTokens(userId);
-        
-        // Create new refresh token
+public RefreshToken createRefreshToken(Long userId) {
+    User user = userRepository.findById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
+    
+    // Check if user already has a token
+    Optional<RefreshToken> existingToken = refreshTokenRepository.findByUserAndRevokedFalse(user);
+    if (existingToken.isPresent()) {
+        // Update the existing token
+        RefreshToken token = existingToken.get();
+        token.setToken(UUID.randomUUID().toString());
+        token.setExpiryDate(Instant.now().plusMillis(refreshTokenExpirationMs));
+        token.setRevoked(false);
+        return refreshTokenRepository.save(token);
+    } else {
+        // Create new refresh token with secure random UUID
         RefreshToken refreshToken = RefreshToken.builder()
                 .user(user)
                 .token(UUID.randomUUID().toString())
                 .expiryDate(Instant.now().plusMillis(refreshTokenExpirationMs))
+                .revoked(false)
                 .build();
         
         log.info("Created new refresh token for user: {}", user.getEmail());
         return refreshTokenRepository.save(refreshToken);
     }
+}
     
+public boolean isUserActivelyLoggedIn(Long userId) {
+    return refreshTokenRepository.existsByUserIdAndRevokedFalse(userId);
+}
     /**
      * Verify if a refresh token is valid
      */

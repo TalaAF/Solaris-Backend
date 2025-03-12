@@ -12,6 +12,8 @@ import com.example.lms.security.jwt.JwtTokenProvider;
 import com.example.lms.security.model.RefreshToken;
 import com.example.lms.security.service.RefreshTokenService;
 import com.example.lms.security.service.SimplifiedAuthService;
+import com.example.lms.user.model.User;
+import com.example.lms.user.repository.UserRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +32,7 @@ public class AuthController {
     private final SimplifiedAuthService authService;
     private final RefreshTokenService refreshTokenService;
     private final JwtTokenProvider tokenProvider;
+    private final UserRepository userRepository;
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
@@ -78,23 +81,20 @@ public class AuthController {
         }
      }
     
-    @PostMapping("/logout")
-    public ResponseEntity<MessageResponse> logoutUser(@Valid @RequestBody LogoutRequest logoutRequest) {
-        log.info("Logout request received");
-        
-         try {
-            refreshTokenService.revokeToken(logoutRequest.getRefreshToken());
-            SecurityContextHolder.clearContext();
-            
-            return ResponseEntity.ok(new MessageResponse("Log out successful"));
-        } catch (Exception e) {
-            log.error("Error during logout: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new MessageResponse("Error during logout: " + e.getMessage()));
-        }
+     @PostMapping("/logout")
+     public ResponseEntity<MessageResponse> logoutUser(@Valid @RequestBody LogoutRequest logoutRequest) {
+         boolean isLogoutSuccessful = authService.logout(logoutRequest);
+         
+         if (isLogoutSuccessful) {
+             // Clear security context
+             SecurityContextHolder.clearContext();
+             return ResponseEntity.ok(new MessageResponse("Log out successful"));
+         } else {
+             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                     .body(new MessageResponse("Error during logout"));
+         }
      }
-    
-    @GetMapping("/test")
+         @GetMapping("/test")
     public ResponseEntity<String> test() {
         return ResponseEntity.ok("Auth endpoint is working");
     }
