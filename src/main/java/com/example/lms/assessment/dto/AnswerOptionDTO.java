@@ -22,6 +22,8 @@ public class AnswerOptionDTO {
         
         private String feedback;
         private Integer orderIndex;
+        private Long id;
+      
     }
     
     @Data

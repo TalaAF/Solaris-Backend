@@ -32,4 +32,6 @@ public interface QuizAttemptRepository extends JpaRepository<QuizAttempt, Long> 
     
     @Query("SELECT MAX(qa.percentageScore) FROM QuizAttempt qa WHERE qa.quiz.id = :quizId AND qa.student.id = :studentId AND qa.status = 'COMPLETED'")
     Double findHighestScoreByQuizIdAndStudentId(@Param("quizId") Long quizId, @Param("studentId") Long studentId);
+
+    Long countByQuizId(Long quizId);
 }
