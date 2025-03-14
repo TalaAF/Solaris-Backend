@@ -41,6 +41,7 @@ public class SimplifiedSecurityConfig {
     private final DynamicPermissionFilter dynamicPermissionFilter;
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
+    private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
 
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter() {
@@ -72,38 +73,35 @@ public class SimplifiedSecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-        .cors().and().csrf().disable()
-            .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            .and()
-            .authorizeRequests()
-                .requestMatchers("/api/auth/**", "/oauth2/**").permitAll()
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                .anyRequest().authenticated()
-            .and()
-            .oauth2Login()
-                .authorizationEndpoint()
-                    .baseUri("/oauth2/authorize")
-                .and()
-                .redirectionEndpoint()
-                    .baseUri("/oauth2/callback/*")
-                .and()
-                .userInfoEndpoint()
-                    .userService(customOAuth2UserService)
-                .and()
-                .successHandler(oAuth2AuthenticationSuccessHandler);
+public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    http
+        .cors(cors -> cors.configure(http))
+        .csrf(csrf -> csrf.disable())
+        .sessionManagement(session -> session
+            .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .exceptionHandling(exceptionHandling -> exceptionHandling
+            .authenticationEntryPoint(customAuthenticationEntryPoint))
+        .authorizeHttpRequests(authorize -> authorize
+            .requestMatchers("/api/auth/**", "/oauth2/**").permitAll()
+            .requestMatchers("/api/admin/**").hasRole("ADMIN")
+            .anyRequest().authenticated())
+        .oauth2Login(oauth2 -> oauth2
+            .authorizationEndpoint(authorization -> authorization
+                .baseUri("/oauth2/authorize"))
+            .redirectionEndpoint(redirection -> redirection
+                .baseUri("/oauth2/callback/*"))
+            .userInfoEndpoint(userInfo -> userInfo
+                .userService(customOAuth2UserService))
+            .successHandler(oAuth2AuthenticationSuccessHandler));
 
-        // Allow H2 console
-        http.headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable()));
+    // Add JWT filter
+    http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
-        // Add JWT filter
-        http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
-
-        http.addFilterAfter(dynamicPermissionFilter, JwtAuthenticationFilter.class);
-        
-        return http.build();
-    }
+    // Add dynamic permission filter after JWT filter
+    http.addFilterAfter(dynamicPermissionFilter, JwtAuthenticationFilter.class);
+    
+    return http.build();
+}
 
     
 }

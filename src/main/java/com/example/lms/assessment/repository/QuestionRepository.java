@@ -18,7 +18,7 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     @Query("SELECT MAX(q.orderIndex) FROM Question q WHERE q.quiz.id = :quizId")
     Integer findMaxOrderIndexByQuizId(@Param("quizId") Long quizId);
     
-    @Query("SELECT AVG(sa.isCorrect * 1.0) FROM StudentAnswer sa WHERE sa.question.id = :questionId")
+    @Query("SELECT COUNT(sa) * 1.0 / (SELECT COUNT(s) FROM StudentAnswer s WHERE s.question.id = :questionId) FROM StudentAnswer sa WHERE sa.question.id = :questionId AND sa.isCorrect = true")
     Double calculateCorrectPercentage(@Param("questionId") Long questionId);
     
     void deleteByQuizId(Long quizId);

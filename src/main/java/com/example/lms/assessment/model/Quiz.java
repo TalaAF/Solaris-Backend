@@ -48,14 +48,17 @@ public class Quiz extends BaseEntity {
     @JoinColumn(name = "course_id", nullable = false)
     private Course course;
 
+    @Builder.Default
     @OneToMany(mappedBy = "quiz", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Question> questions = new ArrayList<>();
 
+    @Builder.Default
     @OneToMany(mappedBy = "quiz", cascade = CascadeType.ALL)
     private List<QuizAttempt> attempts = new ArrayList<>();
 
     // Utility methods for managing questions
     public void addQuestion(Question question) {
+        
         questions.add(question);
         question.setQuiz(this);
     }
