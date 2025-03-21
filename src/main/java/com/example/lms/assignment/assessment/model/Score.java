@@ -17,14 +17,11 @@ public class Score {
     private Long studentId;
 
     @Column(nullable = false)
-    private Long assessmentId;
+    private Long assignmentId; // Renamed from assessmentId to be specific
 
     @Column(nullable = false)
     private Integer score;
 
     @Column
     private LocalDateTime gradedDate;
-
-    @Column(nullable = false)
-    private String assessmentType;
 }
