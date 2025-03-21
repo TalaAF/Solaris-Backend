@@ -8,8 +8,7 @@ import java.time.LocalDateTime;
 public class ScoreDTO {
     private Long id;
     private Long studentId;
-    private Long assessmentId;
+    private Long assignmentId;
     private Integer score;
     private LocalDateTime gradedDate;
-    private String assessmentType;
 }
