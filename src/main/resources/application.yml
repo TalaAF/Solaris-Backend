@@ -1,0 +1,80 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/lmsdb
+
+    username: postgres
+    password: A!ciRche@postG
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: sajashawawra@gmail.com
+    password: sajakhalid281265
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+  jpa:
+    hibernate:
+      ddl-auto: update  # Keep this as "update" to preserve schema
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 5MB
+      max-request-size: 5MB
+  
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: your-google-client-id //I have to make it on google console
+            client-secret: your-google-client-secret
+            scope:
+              - email
+              - profile
+              
+server:
+  port: 8080
+
+logging:
+  level:
+    org.springframework: INFO
+    com.example.lms: DEBUG
+    org.hibernate.SQL: DEBUG
+    io.jsonwebtoken: DEBUG
+
+# JWT Configuration
+app:
+  jwt:
+    secret: S0MeSecUrEanDS4feKeYf0rJWTT0beUsed1nPr0duct10n
+    expiration-ms: 3600000
+    refresh-token:
+      expiration-ms: 604800000
+    issuer: lms-application
+    password-reset:
+    token-expiration-minutes: 30
+  file-storage:
+    upload-dir: uploads
+    allowed-types: 
+      - image/jpeg
+      - image/png
+      - image/gif
+    max-file-size: 2097152
+
+# File storage location configuration
+file:
+  storage:
+    location: uploads
+
+
+
+    
