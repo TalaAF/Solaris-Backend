@@ -6,6 +6,8 @@ import com.example.lms.common.BaseEntity;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
+
 import com.example.lms.Department.model.Department;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -54,4 +56,16 @@ public class User extends BaseEntity {
     @ManyToOne
     @JoinColumn(name = "department_id")
     private Department department; // Relationship with Department
+
+   
+    /**
+     * Check if the raw password matches the stored encoded password
+     * 
+     * @param rawPassword The raw password entered by the user
+     * @param passwordEncoder The PasswordEncoder to validate the password
+     * @return true if the passwords match, false otherwise
+     */
+    public boolean checkPassword(String rawPassword, PasswordEncoder passwordEncoder) {
+        return passwordEncoder.matches(rawPassword, this.password);
+    }
 }
