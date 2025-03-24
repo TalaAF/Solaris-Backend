@@ -14,7 +14,7 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
-@Repository("userUserRepository")
+@Repository("UserRepository")
 public interface UserRepository extends JpaRepository<User, Long> {
   
     // Method to find a user by their email

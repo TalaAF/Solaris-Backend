@@ -12,10 +12,15 @@ import com.example.lms.security.jwt.JwtTokenProvider;
 import com.example.lms.security.model.RefreshToken;
 import com.example.lms.security.service.RefreshTokenService;
 import com.example.lms.security.service.SimplifiedAuthService;
+import com.example.lms.user.model.User;
+import com.example.lms.user.repository.UserRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -27,11 +32,18 @@ public class AuthController {
     private final SimplifiedAuthService authService;
     private final RefreshTokenService refreshTokenService;
     private final JwtTokenProvider tokenProvider;
+    private final UserRepository userRepository;
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
         log.info("Login request received for: {}", loginRequest.getEmail());
-        return ResponseEntity.ok(authService.login(loginRequest));
+        try {
+            AuthResponse response = authService.login(loginRequest);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Login failed: {}", e.getMessage());
+            throw e;
+        }
     }
 
     @PostMapping("/register")
@@ -51,29 +63,38 @@ public class AuthController {
         log.info("Token refresh request received");
         
         String requestRefreshToken = request.getRefreshToken();
-        return refreshTokenService.findByToken(requestRefreshToken)
-                .map(refreshTokenService::verifyExpiration)
-                .map(RefreshToken::getUser)
-                .map(user -> {
-                    String token = tokenProvider.generateToken(
-                            authService.createAuthenticationToken(user));
-                    
-                    log.info("Generated new access token for user: {}", user.getEmail());
-                    return ResponseEntity.ok(new TokenRefreshResponse(token, requestRefreshToken));
-                })
-                .orElseThrow(() -> new TokenRefreshException(requestRefreshToken, "Refresh token not found"));
-    }
+        try {
+            return refreshTokenService.findByToken(requestRefreshToken)
+                    .map(refreshTokenService::verifyExpiration)
+                    .map(RefreshToken::getUser)
+                    .map(user -> {
+                        String token = tokenProvider.generateToken(
+                                authService.createAuthenticationToken(user));
+                        
+                        log.info("Generated new access token for user: {}", user.getEmail());
+                        return ResponseEntity.ok(new TokenRefreshResponse(token, requestRefreshToken));
+                    })
+                    .orElseThrow(() -> new TokenRefreshException(requestRefreshToken, "Refresh token not found"));
+        } catch (TokenRefreshException e) {
+            log.error("Error refreshing token: {}", e.getMessage());
+            throw e;
+        }
+     }
     
-    @PostMapping("/logout")
-    public ResponseEntity<MessageResponse> logoutUser(@Valid @RequestBody LogoutRequest logoutRequest) {
-        log.info("Logout request received");
-        
-        refreshTokenService.revokeToken(logoutRequest.getRefreshToken());
-        
-        return ResponseEntity.ok(new MessageResponse("Log out successful"));
-    }
-    
-    @GetMapping("/test")
+     @PostMapping("/logout")
+     public ResponseEntity<MessageResponse> logoutUser(@Valid @RequestBody LogoutRequest logoutRequest) {
+         boolean isLogoutSuccessful = authService.logout(logoutRequest);
+         
+         if (isLogoutSuccessful) {
+             // Clear security context
+             SecurityContextHolder.clearContext();
+             return ResponseEntity.ok(new MessageResponse("Log out successful"));
+         } else {
+             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                     .body(new MessageResponse("Error during logout"));
+         }
+     }
+         @GetMapping("/test")
     public ResponseEntity<String> test() {
         return ResponseEntity.ok("Auth endpoint is working");
     }

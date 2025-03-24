@@ -1,9 +1,11 @@
 package com.example.lms.content.service;
 
 import com.example.lms.content.model.Module;
+import com.example.lms.content.repository.ContentRepository;
 import com.example.lms.content.repository.ModuleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.lms.common.Exception.ResourceNotFoundException;
 import com.example.lms.content.model.Content;
@@ -18,6 +20,8 @@ public class ModuleService {
 
     @Autowired
     private ModuleRepository moduleRepository;
+    @Autowired
+    private ContentRepository contentRepository;
 
     public List<Module> getAllModules() {
         return moduleRepository.findAll();
@@ -70,24 +74,29 @@ public class ModuleService {
     
     
 
+    @Transactional
     public void reorderContents(Long moduleId, List<Long> contentIds) {
         Module module = moduleRepository.findById(moduleId)
-                .orElseThrow(() -> new RuntimeException("Module not found"));
-    
-        List<Content> contents = module.getContents();
+                .orElseThrow(() -> new ResourceNotFoundException("Module not found with id: " + moduleId));
+        
+        List<Content> contents = contentRepository.findAllById(contentIds);
+        
+        // Validate that all contents belong to the module
+        if (contents.size() != contentIds.size()) {
+            throw new IllegalArgumentException("One or more content IDs are invalid");
+        }
+        
         for (int i = 0; i < contentIds.size(); i++) {
-            Long contentId = contentIds.get(i);
             final int index = i;
+            Long contentId = contentIds.get(index);
             contents.stream()
                     .filter(content -> content.getId().equals(contentId))
                     .findFirst()
                     .ifPresent(content -> {
-            // Update the order of the content within the module
-          module.setSequence(index + 1); // Using sequence from Module
-
+                        content.setOrder(index + 1);
+                        contentRepository.save(content);
                     });
         }
-        moduleRepository.save(module);
     }
 
 
