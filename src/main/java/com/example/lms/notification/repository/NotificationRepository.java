@@ -1,11 +1,13 @@
 package com.example.lms.notification.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import com.example.lms.notification.model.Notification;
+import com.example.lms.notification.model.NotificationType;
 import com.example.lms.user.model.User;
 
 public interface NotificationRepository {
@@ -24,8 +26,17 @@ public interface NotificationRepository {
 
     List<Notification> findBySentFalseOrderByPriorityDescCreatedAtAsc(Pageable pageable);
 
-    void save(Notification notification);
+    Notification save(Notification notification);
 
     List<Notification> findByEmailSentFalseAndSentTrueOrderByPriorityDescCreatedAtAsc(Pageable pageable);
+
+    Notification findById(Long notificationId);
+
+    List<Notification> findSimilarNotifications(User user, NotificationType type, Long relatedEntityId,
+            String relatedEntityType);
+
+    
+
+    
 
 }

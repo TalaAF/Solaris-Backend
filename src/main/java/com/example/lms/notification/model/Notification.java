@@ -60,4 +60,9 @@ public class Notification extends BaseEntity {
     
     @Column(name = "related_entity_type")
     private String relatedEntityType; // Type of related entity
+
+    public Notification orElseThrow(Object object) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'orElseThrow'");
+    }
 }

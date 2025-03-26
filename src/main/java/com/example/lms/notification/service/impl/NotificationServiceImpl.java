@@ -3,6 +3,7 @@ package com.example.lms.notification.service.impl;
 import com.example.lms.common.Exception.ResourceNotFoundException;
 import com.example.lms.notification.factory.NotificationFactory;
 import com.example.lms.notification.model.Notification;
+import com.example.lms.notification.model.NotificationType;
 import com.example.lms.notification.repository.NotificationRepository;
 import com.example.lms.notification.service.NotificationService;
 import com.example.lms.user.model.User;
@@ -50,8 +51,9 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional
     public Notification markAsRead(Long notificationId) {
-        Notification notification = notificationRepository.findById(notificationId)
-                .orElseThrow(() -> new ResourceNotFoundException("Notification not found with id: " + notificationId));
+        Notification notification = notificationRepository.findById(notificationId).orElseThrow(
+             new ResourceNotFoundException("Notification not found with id: " + notificationId)
+        );
         
         notification.setRead(true);
         notification.setReadAt(LocalDateTime.now());
