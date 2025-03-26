@@ -1,5 +1,6 @@
 package com.example.lms.content.controller;
 
+import com.example.lms.common.Exception.ResourceNotFoundException;
 import com.example.lms.content.dto.ContentDTO;
 import com.example.lms.content.service.ContentService;
 import com.example.lms.course.dto.CourseDTO;
@@ -13,6 +14,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -22,7 +24,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -42,18 +46,28 @@ public class ContentController {
            @RequestParam(required = false) String description) {
 
        if (file.isEmpty() || title.isBlank()) {
-           return ResponseEntity.badRequest().body("File and title are required.");
+           Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "File and title are required.");
+            return ResponseEntity.badRequest().body(errorResponse);
        }
 
-       Content content = contentService.createContent(courseId, file, title, description);
-       ContentDTO contentDTO = contentService.convertToDTO(content);
-
-       EntityModel<ContentDTO> contentModel = EntityModel.of(contentDTO);
-       contentModel.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(ContentController.class).getContentById(content.getId(), null)).withSelfRel()); // Pass null for userId
-       contentModel.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(ContentController.class).getContentsByCourseId(courseId)).withRel("course-contents"));
-
-       return ResponseEntity.ok(contentModel);
-   }
+       try {
+            Content content = contentService.createContent(courseId, file, title, description);
+            ContentDTO contentDTO = contentService.convertToDTO(content);
+            
+            // HATEOAS links as in your original code
+            
+            return ResponseEntity.ok(contentDTO);
+        } catch (ResourceNotFoundException e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+        } catch (Exception e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Failed to create content: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
    
     // Get content by ID
     @GetMapping("/{id}")

@@ -2,6 +2,8 @@ package com.example.lms.Department.model;
 
 import com.example.lms.course.model.Course;
 import com.example.lms.user.model.User;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -29,6 +31,7 @@ public class Department {
 
     private String code;
  
+    @JsonIgnore
     @OneToMany(mappedBy = "department", cascade = CascadeType.ALL)
     private List<Course> courses = new ArrayList<>();
 

@@ -7,6 +7,7 @@ import com.example.lms.enrollment.mapper.EnrollmentMapper;
 import com.example.lms.enrollment.model.Enrollment;
 import com.example.lms.enrollment.model.EnrollmentStatus;
 import com.example.lms.enrollment.repository.EnrollmentRepository;
+import com.example.lms.logging.service.UserActivityLogService;
 import com.example.lms.course.model.Course;
 import com.example.lms.course.repository.CourseRepository;
 import com.example.lms.user.model.User;
@@ -36,6 +37,8 @@ public class EnrollmentService {
 
     @Autowired
     private EnrollmentNotificationService enrollmentNotificationService;  // Added for notifications
+    @Autowired
+    private UserActivityLogService logService;
 
     public EnrollmentDTO enrollStudent(Long studentId, Long courseId) {
         User student = userRepository.findById(studentId)
@@ -43,6 +46,7 @@ public class EnrollmentService {
     
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found with ID: " + courseId));
+logService.logActivity(student, "COURSE_ENROLLMENT", "Enrolled in course: " + course.getName());
 
         // Capacity check
         if (course.getStudents().size() >= course.getMaxCapacity()) {

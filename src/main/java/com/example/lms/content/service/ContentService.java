@@ -1,5 +1,6 @@
 package com.example.lms.content.service;
 
+import com.example.lms.common.Exception.ResourceNotFoundException;
 import com.example.lms.content.dto.ContentDTO;
 import com.example.lms.content.model.Content;
 import com.example.lms.content.model.ContentAccessLog;
@@ -15,6 +16,7 @@ import com.example.lms.course.model.Course;
 import com.example.lms.course.repository.CourseRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import org.springframework.data.domain.Page;
@@ -23,8 +25,11 @@ import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class ContentService {
@@ -80,6 +85,7 @@ public class ContentService {
     }
 
     // Get content by ID
+    @Transactional(readOnly = true)
     public Optional<Content> getContentById(Long id) {
         return contentRepository.findById(id);
     }
@@ -91,6 +97,7 @@ public class ContentService {
 
 
     // Update content
+    @Transactional
     public Optional<Content> updateContent(Long id, String title, String description) {
         return contentRepository.findById(id).map(content -> {
             // Save the current version as a previous version
@@ -116,6 +123,7 @@ public class ContentService {
     }
 
     // Delete content
+    @Transactional
     public boolean deleteContent(Long id) {
         return contentRepository.findById(id).map(content -> {
             // Delete the associated file from storage
@@ -142,16 +150,23 @@ public class ContentService {
         String preview = generatePreview(content.getDescription(), 100);
 
         return new ContentDTO(
-                content.getId(),
-                content.getTitle(),
-                content.getDescription(),
-                content.getFilePath(),
-                content.getFileType(),
-                content.getFileSize(),
-                content.getCreatedAt().toString(),
-                content.getUpdatedAt().toString(),
-                preview, // Add preview
-                courseDTO
+            content.getId(),
+            content.getTitle(),
+            content.getDescription(),
+            content.getFilePath(),
+            content.getFileType(),
+            content.getFileSize(),
+            content.getCreatedAt().toString(),
+            content.getUpdatedAt().toString(),
+            content.getCourse().getId(),
+            content.getCourse().getTitle(),
+            content.getModule() != null ? content.getModule().getId() : null,
+            content.getModule() != null ? content.getModule().getTitle() : null,
+            content.getOrder(),
+            content.getTags() != null ? 
+                content.getTags().stream().map(Tag::getName).collect(Collectors.toList()) : 
+                Collections.emptyList(),
+            generatePreview(content.getDescription(), 100)
         );
     }
 
@@ -172,17 +187,38 @@ public class ContentService {
         contentAccessLogRepository.save(log);
     }
 
-    public Content assignContentToModule(Long contentId, Long moduleId) {
-        return contentRepository.findById(contentId).map(content -> {
-            moduleRepository.findById(moduleId).ifPresent(content::setModule);
-            return contentRepository.save(content);
-        }).orElseThrow(() -> new RuntimeException("Content not found"));
-    }
+   @Transactional
+public Content assignContentToModule(Long contentId, Long moduleId) {
+    Content content = contentRepository.findById(contentId)
+            .orElseThrow(() -> new ResourceNotFoundException("Content not found with id: " + contentId));
+            
+            com.example.lms.content.model.Module module = moduleRepository.findById(moduleId)
+            .orElseThrow(() -> new ResourceNotFoundException("Module not found with id: " + moduleId));
+    
+    // Determine the next order value for this content in the module
+    Integer maxOrder = content.getModule() == null ? 0 : 
+        module.getContents().stream()
+            .map(Content::getOrder)
+            .filter(Objects::nonNull)
+            .max(Integer::compareTo)
+            .orElse(0);
+            
+    content.setModule(module);
+    content.setOrder(maxOrder + 1);
+    
+    return contentRepository.save(content);
+}
 
     
-    public Page<Content> searchByKeyword(String keyword, Pageable pageable) {
-        return contentRepository.findByTitleContainingOrDescriptionContaining(keyword, keyword, pageable);
+@Transactional(readOnly = true)
+public Page<Content> searchByKeyword(String keyword, Pageable pageable) {
+    if (keyword == null || keyword.trim().isEmpty()) {
+        return contentRepository.findAll(pageable);
     }
+    
+    String searchTerm = "%" + keyword.toLowerCase() + "%";
+    return contentRepository.findByTitleContainingOrDescriptionContaining(searchTerm, searchTerm, pageable);
+}
 
     public List<Content> searchByKeywordWithRelevance(String keyword) {
         List<Content> contents = contentRepository.searchByKeyword(keyword);
@@ -201,21 +237,33 @@ public class ContentService {
         return score;
     }
 
+    @Transactional
     public Content addTagToContent(Long contentId, Tag tag) {
-        return contentRepository.findById(contentId).map(content -> {
-            Tag existingTag = tagRepository.findByName(tag.getName());
-            Tag tagToUse;
-            
-            if (existingTag == null) {
-                tagToUse = tagRepository.save(tag);
-            } else {
-                tagToUse = existingTag; 
-            }
-    
+        Content content = contentRepository.findById(contentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Content not found with id: " + contentId));
+                
+        if (tag.getName() == null || tag.getName().trim().isEmpty()) {
+            throw new IllegalArgumentException("Tag name cannot be empty");
+        }
+        
+        // Normalize tag name - lowercase and trim
+        String normalizedTagName = tag.getName().toLowerCase().trim();
+        tag.setName(normalizedTagName);
+        
+        // Find existing tag or create new one
+        Tag existingTag = tagRepository.findByName(normalizedTagName);
+        Tag tagToUse = existingTag != null ? existingTag : tagRepository.save(tag);
+        
+        // Check if content already has this tag
+        boolean tagExists = content.getTags().stream()
+                .anyMatch(t -> t.getName().equals(normalizedTagName));
+                
+        if (!tagExists) {
             content.getTags().add(tagToUse);
-            
             return contentRepository.save(content);
-        }).orElseThrow(() -> new RuntimeException("Content not found"));
+        }
+        
+        return content;
     }
     
     public List<Content> filterContents(String tags, String fileType) {

@@ -1,5 +1,6 @@
 package com.example.lms.notification.service;
 
+<<<<<<< HEAD
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
@@ -108,3 +109,24 @@ public class EmailService {
         }
     }
 }
+=======
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.stereotype.Service;
+
+@Service
+public class EmailService {
+
+    @Autowired
+    private JavaMailSender mailSender;
+
+    public void sendEmail(String to, String subject, String message) {
+        SimpleMailMessage email = new SimpleMailMessage();
+        email.setTo(to);
+        email.setSubject(subject);
+        email.setText(message);
+        mailSender.send(email);
+    }
+}
+>>>>>>> 3b68d9df5451bb07444ea98a545f6b71d0ae7194
