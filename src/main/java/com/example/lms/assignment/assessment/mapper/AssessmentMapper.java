@@ -1,10 +1,11 @@
-package com.example.lms.assignment.assessment.mapper;
+package com.example.lms.assignment.assignments.mapper;
 
-import com.example.lms.assignment.assessment.dto.AssignmentDTO;
-import com.example.lms.assignment.assessment.dto.ScoreDTO;
-import com.example.lms.assignment.assessment.model.Assignment;
-import com.example.lms.assignment.assessment.model.Score;
 import org.mapstruct.Mapper;
+
+import com.example.lms.assignment.assignments.dto.AssignmentDTO;
+import com.example.lms.assignment.assignments.dto.ScoreDTO;
+import com.example.lms.assignment.assignments.model.Assignment;
+import com.example.lms.assignment.assignments.model.Score;
 
 @Mapper(componentModel = "spring")
 public interface AssessmentMapper {

@@ -1,7 +1,8 @@
 package com.example.lms.notification.domain;
 
-import com.example.lms.assignment.assessment.model.Assignment;
-import com.example.lms.assignment.assessment.repository.AssignmentRepository;
+
+import com.example.lms.assignment.assignments.model.Assignment;
+import com.example.lms.assignment.assignments.repository.AssignmentRepository;
 import com.example.lms.assessment.model.Quiz;
 import com.example.lms.assessment.repository.QuizRepository;
 import com.example.lms.common.Exception.ResourceNotFoundException;
@@ -45,7 +46,9 @@ public class AssessmentNotificationService {
                     .orElseThrow(() -> new ResourceNotFoundException("Assignment not found with id: " + assignmentId));
             
             // Get the course and its enrolled students
-            Course course = assignment.getCourse();
+            
+            Course course = courseRepository.findById(assignment.getCourseId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
             List<User> students = course.getStudents().stream().collect(Collectors.toList());
             
             if (students.isEmpty()) {

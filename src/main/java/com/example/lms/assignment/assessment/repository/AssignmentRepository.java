@@ -1,7 +1,8 @@
-package com.example.lms.assignment.assessment.repository;
+package com.example.lms.assignment.assignments.repository;
 
-import com.example.lms.assignment.assessment.model.Assignment;
 import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.example.lms.assignment.assignments.model.Assignment;
 
 public interface AssignmentRepository extends JpaRepository<Assignment, Long> {
 }
