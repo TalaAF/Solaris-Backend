@@ -1,6 +1,7 @@
 package com.example.lms.course.model;
 
 import com.example.lms.Department.model.Department;
+import com.example.lms.assessment.model.Quiz;
 import com.example.lms.content.model.Content;
 import com.example.lms.user.model.User;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -8,8 +9,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.List;
 
 @Entity
 @Getter
@@ -38,20 +41,12 @@ public class Course {
     private User instructor;
 
     @ManyToMany
-    @JoinTable(
-        name = "course_students",
-        joinColumns = @JoinColumn(name = "course_id"),
-        inverseJoinColumns = @JoinColumn(name = "student_id")
-    )
+    @JoinTable(name = "course_students", joinColumns = @JoinColumn(name = "course_id"), inverseJoinColumns = @JoinColumn(name = "student_id"))
     private Set<User> students = new HashSet<>();
 
     // Add Prerequisites (self-referencing ManyToMany relationship)
     @ManyToMany
-    @JoinTable(
-        name = "course_prerequisites",
-        joinColumns = @JoinColumn(name = "course_id"),
-        inverseJoinColumns = @JoinColumn(name = "prerequisite_course_id")
-    )
+    @JoinTable(name = "course_prerequisites", joinColumns = @JoinColumn(name = "course_id"), inverseJoinColumns = @JoinColumn(name = "prerequisite_course_id"))
     private Set<Course> prerequisites = new HashSet<>();
 
     @Column(nullable = true) // Make it nullable
@@ -70,11 +65,12 @@ public class Course {
         this.name = title; // Set the name as the title
     }
 
-       // Inverse relationship with content
-       @JsonIgnore
-       @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
-       private Set<Content> contents = new HashSet<>();
+    // Inverse relationship with content
+    @JsonIgnore
+    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Content> contents = new HashSet<>();
 
-       
-   
+    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Quiz> quizzes = new ArrayList<>();
+
 }
