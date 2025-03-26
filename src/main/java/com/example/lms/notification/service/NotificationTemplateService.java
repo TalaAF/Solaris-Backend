@@ -9,21 +9,17 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.Resource;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
-import org.thymeleaf.spring5.SpringTemplateEngine;
+import org.thymeleaf.spring6.SpringTemplateEngine;
 import org.thymeleaf.templatemode.TemplateMode;
 import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 
-
 import javax.annotation.PostConstruct;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @RequiredArgsConstructor
@@ -33,13 +29,23 @@ public class NotificationTemplateService {
     private final NotificationTemplateRepository templateRepository;
     private final TemplateEngine templateEngine;
     
+    // Template cache for better performance
+    private final Map<NotificationType, NotificationTemplate> templateCache = new ConcurrentHashMap<>();
+    
     /**
-     * Get template by notification type
+     * Get template by notification type with caching
      */
     @Transactional(readOnly = true)
     public NotificationTemplate getTemplateByType(NotificationType type) {
-        return templateRepository.findByTypeAndActiveTrue(type)
-                .orElseThrow(() -> new ResourceNotFoundException("Template not found for type: " + type));
+        return templateCache.computeIfAbsent(type, t -> {
+            try {
+                return templateRepository.findByTypeAndActiveTrue(t)
+                    .orElseThrow(() -> new ResourceNotFoundException("Template not found for type: " + t));
+            } catch (ResourceNotFoundException e) {
+                log.warn("Template not found for type: {}. Using default handling.", type);
+                return null;
+            }
+        });
     }
     
     /**
@@ -48,6 +54,10 @@ public class NotificationTemplateService {
     public String processTemplate(NotificationType type, Map<String, Object> placeholders, String templateType) {
         try {
             NotificationTemplate template = getTemplateByType(type);
+            
+            if (template == null) {
+                return null;
+            }
             
             if ("email".equalsIgnoreCase(templateType)) {
                 // Use Thymeleaf for email templates
@@ -63,9 +73,6 @@ public class NotificationTemplateService {
                 String templateContent = template.getInAppTemplate();
                 return replacePlaceholders(templateContent, placeholders);
             }
-        } catch (ResourceNotFoundException e) {
-            log.warn("Template not found for type: {}. Using default handling.", type);
-            return null;
         } catch (Exception e) {
             log.error("Error processing template for type: " + type, e);
             return null;
@@ -78,10 +85,12 @@ public class NotificationTemplateService {
     public String processSubject(NotificationType type, Map<String, Object> placeholders) {
         try {
             NotificationTemplate template = getTemplateByType(type);
+            
+            if (template == null) {
+                return null;
+            }
+            
             return replacePlaceholders(template.getSubject(), placeholders);
-        } catch (ResourceNotFoundException e) {
-            log.warn("Template not found for type: {}. Using default subject.", type);
-            return null;
         } catch (Exception e) {
             log.error("Error processing subject for type: " + type, e);
             return null;
@@ -101,6 +110,15 @@ public class NotificationTemplateService {
         }
         
         return processed;
+    }
+    
+    /**
+     * Refresh template cache (scheduled or manually triggered)
+     */
+    @Transactional
+    public void refreshTemplateCache() {
+        templateCache.clear();
+        log.debug("Notification template cache cleared");
     }
     
     /**
@@ -165,14 +183,14 @@ public class NotificationTemplateService {
             createDefaultTemplate(
                 NotificationType.FORUM_REPLY,
                 "New Reply to Your Forum Post",
-                "<p>Hello {{userName}},</p><p>{{replyAuthorName}} has replied to your post in <strong>{{threadTitle}}</strong>:</p><p><em>\"{{replyContent}}\"</em></p><p>Your original post: <em>\"{{originalPostContent}}\"</em></p><p>Please log in to view and respond.</p>",
+                "forum-reply.html",
                 "{{replyAuthorName}} replied to your post: \"{{replyContent}}\""
             );
             
             createDefaultTemplate(
                 NotificationType.FORUM_MENTION,
                 "You Were Mentioned in a Forum Post",
-                "<p>Hello {{userName}},</p><p>{{authorName}} mentioned you in a forum post:</p><p><em>\"{{postContent}}\"</em></p><p>Please log in to view and respond.</p>",
+                "forum-mention.html",
                 "{{authorName}} mentioned you in a forum post: \"{{postContent}}\""
             );
             
@@ -188,7 +206,7 @@ public class NotificationTemplateService {
         NotificationTemplate template = NotificationTemplate.builder()
                 .type(type)
                 .subject(subject)
-                .emailTemplate(emailTemplate)
+                .emailTemplateName(emailTemplate)
                 .inAppTemplate(inAppTemplate)
                 .active(true)
                 .build();
