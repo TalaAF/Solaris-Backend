@@ -1,4 +1,4 @@
-package com.example.lms.assignment.assessment.dto;
+package com.example.lms.assignment.assignments.dto;
 
 import lombok.Data;
 
