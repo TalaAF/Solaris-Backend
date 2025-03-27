@@ -6,16 +6,18 @@ spring:
     password: A!ciRche@postG
 
   mail:
-    host: smtp.gmail.com
+    host: smtp.example.com
     port: 587
-    username: sajashawawra@gmail.com
-    password: sajakhalid281265
+    username: your-username@example.com
+    password: your-password
     properties:
       mail:
         smtp:
           auth: true
           starttls:
             enable: true
+    from: noreply@yourlms.com
+    enabled: false  # Set to true in production
 
   jpa:
     hibernate:
