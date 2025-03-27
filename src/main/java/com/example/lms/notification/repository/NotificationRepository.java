@@ -10,8 +10,9 @@ import org.springframework.data.domain.Pageable;
 import com.example.lms.notification.model.Notification;
 import com.example.lms.notification.model.NotificationType;
 import com.example.lms.user.model.User;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface NotificationRepository {
+public interface NotificationRepository extends JpaRepository<Notification, Long> {
 
     List<Notification> findByUserAndReadFalseOrderByCreatedAtDesc(User user);
 
@@ -31,12 +32,9 @@ public interface NotificationRepository {
 
     List<Notification> findByEmailSentFalseAndSentTrueOrderByPriorityDescCreatedAtAsc(Pageable pageable);
 
-    Notification findById(Long notificationId);
 
     List<Notification> findSimilarNotifications(User user, NotificationType type, Long relatedEntityId,
-            String relatedEntityType);
+                                                String relatedEntityType);
 
-    
 
-   
 }

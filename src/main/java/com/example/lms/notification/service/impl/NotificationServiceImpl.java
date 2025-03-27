@@ -51,8 +51,8 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional
     public Notification markAsRead(Long notificationId) {
-        Notification notification = notificationRepository.findById(notificationId).orElseThrow(
-             new ResourceNotFoundException("Notification not found with id: " + notificationId)
+        Notification notification = notificationRepository.findById(notificationId).orElseThrow(() ->
+                new ResourceNotFoundException("Notification not found with id: " + notificationId)
         );
         
         notification.setRead(true);

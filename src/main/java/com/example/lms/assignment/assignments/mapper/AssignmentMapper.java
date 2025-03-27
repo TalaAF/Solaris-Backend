@@ -8,7 +8,7 @@ import com.example.lms.assignment.assignments.model.Assignment;
 import com.example.lms.assignment.assignments.model.Score;
 
 @Mapper(componentModel = "spring" )
-public interface AssessmentMapper {
+public interface AssignmentMapper {
     AssignmentDTO toAssignmentDTO(Assignment assignment);
     Assignment toAssignment(AssignmentDTO assignmentDTO);
 
