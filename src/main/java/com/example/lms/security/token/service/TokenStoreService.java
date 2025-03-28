@@ -12,14 +12,18 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TokenStoreService {
     
     private final UserTokenRepository tokenRepository;
     private final UserRepository userRepository;
+
+
     
     // Create a new token
     public UserToken createToken(User user, String userAgent, String ipAddress) {
@@ -34,10 +38,32 @@ public class TokenStoreService {
     }
     
     // Validate a token
-    public boolean validateToken(String tokenId) {
-        Optional<UserToken> token = tokenRepository.findByTokenId(tokenId);
-        return token.isPresent() && token.get().isValid();
+    // Validate a token
+public boolean validateToken(String tokenId) {
+    if (tokenId == null || tokenId.isEmpty()) {
+        return false;
     }
+    
+    Optional<UserToken> tokenOpt = tokenRepository.findByTokenId(tokenId);
+    if (tokenOpt.isEmpty()) {
+        return false;
+    }
+    
+    UserToken token = tokenOpt.get();
+    
+    // Check if token is not revoked and not expired
+    boolean isValid = !token.isRevoked() && Instant.now().isBefore(token.getExpiryDate());
+    
+    if (!isValid) {
+        if (token.isRevoked()) {
+            log.debug("Token {} was revoked", tokenId);
+        } else {
+            log.debug("Token {} expired at {}", tokenId, token.getExpiryDate());
+        }
+    }
+    
+    return isValid;
+}
     
     // Revoke a specific token
     public void revokeToken(String tokenId) {

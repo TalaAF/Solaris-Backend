@@ -112,7 +112,7 @@ public class JwtTokenProvider {
     );
         // Now use your application's User type
         claims.put("userId", user.getId());
-        claims.put("tokenVersion", user.getTokenVersion());
+        claims.put("tokenId", userToken.getTokenId());
         claims.put("issuedAt", new Date().getTime());
     
         Date now = new Date();
@@ -182,7 +182,7 @@ public class JwtTokenProvider {
             }
 
             // Token is valid
-            return tokenStoreService.validateToken(tokenId);
+            return true;
         } catch (SignatureException ex) {
             log.error("Invalid JWT signature: {}", ex.getMessage());
         } catch (MalformedJwtException ex) {
@@ -297,5 +297,15 @@ public String generateToken(Authentication authentication) {
     // Create a mock HttpServletRequest
     HttpServletRequest mockRequest = new MockHttpServletRequest();
     return generateToken(authentication, mockRequest);
+}
+
+public String getTokenIdFromToken(String token) {
+    try {
+        Claims claims = parseToken(token);
+        return claims.get("tokenId", String.class);
+    } catch (Exception e) {
+        log.error("Error extracting tokenId from JWT: {}", e.getMessage());
+        return null;
+    }
 }
 }

@@ -68,6 +68,10 @@ public class SimplifiedAuthService {
         Claims claims = tokenProvider.parseToken(jwt);
     String tokenId = claims.get("tokenId", String.class);
 
+    if (tokenId == null) {
+        throw new IllegalStateException("Token generation failed to include tokenId");
+    }
+
         // Join role names with comma for the response
         String roleNames = user.getRoles().stream()
                 .map(Role::getName)

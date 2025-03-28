@@ -7,6 +7,7 @@ import com.example.lms.security.jwt.JwtTokenProvider;
 import com.example.lms.security.oauth.CustomOAuth2UserService;
 import com.example.lms.security.oauth.OAuth2AuthenticationSuccessHandler;
 import com.example.lms.security.service.RefreshTokenService;
+import com.example.lms.security.token.service.TokenStoreService;
 import com.example.lms.user.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -53,11 +54,12 @@ public class SimplifiedSecurityConfig {
     private final UserRepository userRepository;
     private final RefreshTokenService refreshTokenService;
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
-
+    private final TokenStoreService tokenStoreService;
 
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter() {
-        return new JwtAuthenticationFilter(tokenProvider, userRepository, refreshTokenService);
+        
+        return new JwtAuthenticationFilter(tokenProvider, userRepository, tokenStoreService);
     }
 
     @Bean
