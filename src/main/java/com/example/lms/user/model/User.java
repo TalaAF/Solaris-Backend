@@ -48,8 +48,8 @@ public class User extends BaseEntity {
     private Set<Enrollment> enrollments = new HashSet<>();
 
     // In User.java
-    @Column
-    private long tokenVersion = 0;
+    @Column(nullable = false)
+    private Long tokenVersion = 0L;
 
     public void incrementTokenVersion() {
         this.tokenVersion++;

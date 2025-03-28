@@ -135,7 +135,8 @@ public class JwtTokenProvider {
     
     public Long getTokenVersionFromToken(String token) {
         Claims claims = parseToken(token);
-        return claims.get("tokenVersion", Long.class);
+        Long tokenVersion = claims.get("tokenVersion", Long.class);
+        return tokenVersion != null ? tokenVersion : 0L;
     }
     /**
      * Validate a token's signature, expiration, and claims

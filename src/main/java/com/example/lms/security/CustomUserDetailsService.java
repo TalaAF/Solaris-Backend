@@ -58,6 +58,10 @@ public class CustomUserDetailsService implements UserDetailsService {
         throw new LockedException("User account is locked");
     }
 
+    if (user.getTokenVersion() == null) {
+        user.setTokenVersion(0L);
+        userRepository.save(user);
+    }
      // Collect authorities from all roles and permissions
      Set<GrantedAuthority> authorities = new HashSet<>();
     

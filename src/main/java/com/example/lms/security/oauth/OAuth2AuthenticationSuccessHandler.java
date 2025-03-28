@@ -24,22 +24,19 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         // Generate JWT token
         String token = tokenProvider.generateToken(authentication);
         
-        // Get the redirect URL (frontend application URL)
-        String targetUrl = determineTargetUrl(request, response, authentication);
-        
-        // Add token to URL
-        String redirectUrl = UriComponentsBuilder.fromUriString(targetUrl)
+        // For backend testing, redirect to a simple success page with token
+        String redirectUrl = UriComponentsBuilder.fromUriString("/oauth2/success")
                 .queryParam("token", token)
                 .build().toUriString();
         
-        // Redirect user to frontend with the token
+        // Redirect to our own endpoint instead of a frontend
         getRedirectStrategy().sendRedirect(request, response, redirectUrl);
     }
     
     @Override
     protected String determineTargetUrl(HttpServletRequest request, HttpServletResponse response,
                                        Authentication authentication) {
-        // You can make this configurable from application.properties
-        return "http://localhost:3000/oauth2/redirect";
+        // For backend testing, we'll use our own endpoint
+        return "/oauth2/success";
     }
 }

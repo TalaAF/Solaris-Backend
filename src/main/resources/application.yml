@@ -40,8 +40,8 @@ spring:
       client:
         registration:
           google:
-            client-id: your-google-client-id //I have to make it on google console
-            client-secret: your-google-client-secret
+            client-id: 1018314000990-96qt9gvqukf2nve83apl1q75gr0kt92h.apps.googleusercontent.com
+            client-secret: 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
             scope:
               - email
               - profile

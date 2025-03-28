@@ -11,12 +11,13 @@ import com.example.lms.notification.model.Notification;
 import com.example.lms.notification.model.NotificationType;
 import com.example.lms.user.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
 
     List<Notification> findByUserAndReadFalseOrderByCreatedAtDesc(User user);
 
-    void saveAll(List<Notification> unreadNotifications);
 
     Page<Notification> findByUserOrderByCreatedAtDesc(User user, Pageable pageable);
 
@@ -33,8 +34,13 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     List<Notification> findByEmailSentFalseAndSentTrueOrderByPriorityDescCreatedAtAsc(Pageable pageable);
 
 
-    List<Notification> findSimilarNotifications(User user, NotificationType type, Long relatedEntityId,
-                                                String relatedEntityType);
-
+    @Query("SELECT n FROM Notification n WHERE n.user = :user AND n.type = :type " +
+           "AND n.relatedEntityId = :relatedEntityId AND n.relatedEntityType = :relatedEntityType")
+    List<Notification> findSimilarNotifications(
+        @Param("user") User user, 
+        @Param("type") NotificationType type, 
+        @Param("relatedEntityId") Long relatedEntityId,
+        @Param("relatedEntityType") String relatedEntityType
+    );
 
 }
