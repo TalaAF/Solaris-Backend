@@ -16,6 +16,7 @@ public class Certificate {
     private Long courseId;
     private String certificateUrl;
     private LocalDateTime issuedAt;
+    private String courseName;
     @Column
 private String achievementDetails;
 
@@ -32,14 +33,20 @@ private boolean isRevoked;
 
 @Column
 private String revocationReason;
+@Column
+private String linkedInSharingUrl;
 
     public Certificate() {}
 
-    public Certificate(Long studentId, Long courseId, String certificateUrl) {
+    public Certificate(Long studentId, Long courseId, String certificateUrl , String courseName) {
         this.studentId = studentId;
         this.courseId = courseId;
         this.certificateUrl = certificateUrl;
         this.issuedAt = LocalDateTime.now();
+        this.courseName= courseName;
     }
-
+    public Certificate(Long studentId, Long courseId, String certificateUrl) {
+        this.studentId = studentId;
+        this.courseId = courseId;
+        this.certificateUrl = certificateUrl;}
 }

@@ -15,6 +15,9 @@ import io.jsonwebtoken.io.IOException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.ByteArrayOutputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.util.ArrayList;
 import java.util.List;
 
 import java.util.Optional;
@@ -119,5 +122,38 @@ public Certificate revokeCertificate(Long certificateId, String reason) {
     certificate.setRevocationReason(reason);
     
     return certificateRepository.save(certificate);
+}
+@Transactional
+public List<Certificate> generateBatchCertificates(Long courseId, List<Long> studentIds) {
+    List<Certificate> certificates = new ArrayList<>();
+    
+    for (Long studentId : studentIds) {
+        certificates.add(generateCertificate(studentId, courseId));
+    }
+    
+    return certificates;
+}
+@Transactional
+public String generateLinkedInSharingUrl(Long certificateId) throws UnsupportedEncodingException {
+    Certificate certificate = certificateRepository.findById(certificateId)
+            .orElseThrow(() -> new ResourceNotFoundException("Certificate not found"));
+    
+    String baseUrl = "https://www.linkedin.com/profile/add?startTask=CERTIFICATION_NAME";
+    String certName;
+    try {
+        certName = URLEncoder.encode("Course Completion: " + certificate.getCourseName(), "UTF-8");
+    } catch (UnsupportedEncodingException e) {
+        throw new RuntimeException("Encoding not supported", e);
+    }
+    String orgName = URLEncoder.encode("Your LMS Name", "UTF-8");
+    
+    String sharingUrl = baseUrl + 
+                        "&name=" + certName + 
+                        "&organizationName=" + orgName;
+    
+    certificate.setLinkedInSharingUrl(sharingUrl);
+    certificateRepository.save(certificate);
+    
+    return sharingUrl;
 }
 }

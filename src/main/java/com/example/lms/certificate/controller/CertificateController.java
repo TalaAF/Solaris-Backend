@@ -2,6 +2,7 @@ package com.example.lms.certificate.controller;
 
 import com.example.lms.certificate.assembler.CertificateAssembler;
 import com.example.lms.certificate.dto.CertificateDTO;
+import com.example.lms.certificate.mapper.CertificateMapper;
 import com.example.lms.certificate.model.Certificate;
 import com.example.lms.certificate.service.CertificateService;
 
@@ -95,5 +96,18 @@ public ResponseEntity<byte[]> downloadCertificate(@PathVariable Long certificate
     } catch (Exception e) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
     }
+}
+@PostMapping("/batch/{courseId}")
+public ResponseEntity<List<CertificateDTO>> generateBatchCertificates(
+        @PathVariable Long courseId,
+        @RequestBody List<Long> studentIds) {
+    
+    List<Certificate> certificates = certificateService.generateBatchCertificates(courseId, studentIds);
+    
+    List<CertificateDTO> certificateDTOs = certificates.stream()
+            .map(CertificateMapper::toDTO)
+            .collect(Collectors.toList());
+    
+    return ResponseEntity.ok(certificateDTOs);
 }
 }
