@@ -7,25 +7,47 @@ import com.example.lms.user.model.User;
 
 public class EnrollmentMapper {
 
+    // Convert Entity to DTO
+    public static EnrollmentDTO toDTO(Enrollment enrollment) {
+        EnrollmentDTO.EnrollmentDTOBuilder builder = EnrollmentDTO.builder()
+                .id(enrollment.getId())
+                .studentId(enrollment.getStudent().getId())
+                .studentName(enrollment.getStudent().getFullName())
+                .courseId(enrollment.getCourse().getId())
+                .courseName(enrollment.getCourse().getTitle())
+                .status(enrollment.getStatus())
+                .enrollmentDate(enrollment.getEnrollmentDate())
+                .completionDate(enrollment.getCompletionDate())
+                .lastAccessedDate(enrollment.getLastAccessedDate())
+                .progress(enrollment.getProgress());
+        
+        // Check if the course is active
+        builder.isCourseActive(enrollment.getCourse().isActive());
+        
+        return builder.build();
+    }
+
     // Convert DTO to Entity
     public static Enrollment toEntity(EnrollmentDTO dto, User student, Course course) {
         return Enrollment.builder()
                 .student(student)
                 .course(course)
                 .status(dto.getStatus())
-                .enrollmentDate(dto.getEnrollmentDate())
-                .progress(dto.getProgress()) // If you are tracking progress
+                .enrollmentDate(LocalDateTime.now())
+                .progress(dto.getProgress() != null ? dto.getProgress() : 0.0)
                 .build();
     }
-
-    // Convert Entity to DTO
-    public static EnrollmentDTO toDTO(Enrollment enrollment) {
+    
+    // Convert from Entity to minimal DTO (for list views)
+    public static EnrollmentDTO toMinimalDTO(Enrollment enrollment) {
         return EnrollmentDTO.builder()
+                .id(enrollment.getId())
                 .studentId(enrollment.getStudent().getId())
+                .studentName(enrollment.getStudent().getFullName())
                 .courseId(enrollment.getCourse().getId())
+                .courseName(enrollment.getCourse().getTitle())
                 .status(enrollment.getStatus())
-                .enrollmentDate(enrollment.getEnrollmentDate())
-                .progress(enrollment.getProgress()) // Ensure this field exists in `Enrollment`
+                .progress(enrollment.getProgress())
                 .build();
     }
 }
