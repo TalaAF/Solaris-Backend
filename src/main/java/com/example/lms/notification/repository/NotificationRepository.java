@@ -17,6 +17,10 @@ import org.springframework.data.repository.query.Param;
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
 
     List<Notification> findByUserAndReadFalseOrderByCreatedAtDesc(User user);
+    List<Notification> findByContentContaining(String text);
+    
+       @Query("SELECT n FROM Notification n WHERE n.content LIKE %:text%")
+    List<Notification> findSimilarNotifications(@Param("text") String text);
 
 
     Page<Notification> findByUserOrderByCreatedAtDesc(User user, Pageable pageable);
