@@ -35,7 +35,8 @@ private boolean isRevoked;
 private String revocationReason;
 @Column
 private String linkedInSharingUrl;
-
+@Column(unique = true)
+private String verificationId; 
     public Certificate() {}
 
     public Certificate(Long studentId, Long courseId, String certificateUrl , String courseName) {
