@@ -11,7 +11,7 @@ public class Certificate {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
+    private String templateId;
     private Long studentId;
     private Long courseId;
     private String certificateUrl;

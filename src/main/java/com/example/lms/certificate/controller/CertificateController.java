@@ -4,10 +4,21 @@ import com.example.lms.certificate.assembler.CertificateAssembler;
 import com.example.lms.certificate.dto.CertificateDTO;
 import com.example.lms.certificate.model.Certificate;
 import com.example.lms.certificate.service.CertificateService;
+
+import jakarta.transaction.Transactional;
+
+import java.nio.file.Path;
+import org.springframework.core.io.Resource;
+import org.springframework.http.MediaType;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.http.HttpHeaders;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -63,4 +74,26 @@ public class CertificateController {
                 .collect(Collectors.toList());
         return ResponseEntity.ok(certificateDTOs);
     }
+    
+
+// Add endpoint to CertificateController.java
+@GetMapping("/verify/{verificationId}")
+public ResponseEntity<Boolean> verifyCertificate(@PathVariable String verificationId) {
+    boolean isValid = certificateService.verifyCertificate(verificationId);
+    return ResponseEntity.ok(isValid);
+}
+@GetMapping("/{certificateId}/download")
+public ResponseEntity<byte[]> downloadCertificate(@PathVariable Long certificateId) {
+    try {
+        byte[] certificatePdf = certificateService.generateCertificatePDF(certificateId);
+        
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDispositionFormData("attachment", "certificate.pdf");
+        
+        return new ResponseEntity<>(certificatePdf, headers, HttpStatus.OK);
+    } catch (Exception e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    }
+}
 }
