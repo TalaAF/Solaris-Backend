@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/lmsdb
+    url: jdbc:postgresql://localhost:5432/NewDB
     username: postgres
     password: A!ciRche@postG
 
