@@ -12,6 +12,10 @@ import com.example.lms.course.model.Course;
 import com.example.lms.course.repository.CourseRepository;
 import com.example.lms.user.model.User;
 import com.example.lms.user.repository.UserRepository;
+
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -126,4 +130,23 @@ logService.logActivity(student, "COURSE_ENROLLMENT", "Enrolled in course: " + co
 
         return EnrollmentMapper.toDTO(enrollment);
     }
+    /**
+ * Check if a student has completed a course
+ * 
+ * @param studentId Student ID
+ * @param courseId Course ID
+ * @return true if the course is completed, false otherwise
+ */
+@Transactional(readOnly = true)
+public boolean hasCompletedCourse(Long studentId, Long courseId) {
+    Optional<Enrollment> enrollment = enrollmentRepository.findByStudentIdAndCourseId(studentId, courseId);
+    
+    // If no enrollment found, student hasn't completed the course
+    if (enrollment.isEmpty()) {
+        return false;
+    }
+    
+    // Check if the enrollment status is COMPLETED
+    return enrollment.get().getStatus() == EnrollmentStatus.COMPLETED;
+}
 }
