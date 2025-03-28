@@ -23,8 +23,8 @@ public class Assignment {
     private String description;
 
     @Column(nullable = false)
-    private LocalDateTime dueDate;
-
-    @Column(nullable = false)
     private Integer maxScore;
+
+    @Column(nullable = false) // Enforce NOT NULL at the JPA level
+    private LocalDateTime dueDate;
 }
