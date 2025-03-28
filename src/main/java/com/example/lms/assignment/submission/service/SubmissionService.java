@@ -1,9 +1,9 @@
 package com.example.lms.assignment.submission.service;
 
-import com.example.lms.assignment.assessment.model.Assignment;
-import com.example.lms.assignment.assessment.model.Score;
-import com.example.lms.assignment.assessment.repository.AssignmentRepository;
-import com.example.lms.assignment.assessment.repository.ScoreRepository;
+import com.example.lms.assignment.assignments.model.Assignment;
+import com.example.lms.assignment.assignments.model.Score;
+import com.example.lms.assignment.assignments.repository.AssignmentRepository;
+import com.example.lms.assignment.assignments.repository.ScoreRepository;
 import com.example.lms.assignment.submission.model.Submission;
 import com.example.lms.assignment.submission.repository.SubmissionRepository;
 import org.slf4j.Logger;

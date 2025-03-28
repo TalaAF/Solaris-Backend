@@ -2,19 +2,20 @@
 package com.example.lms.user.model;
 
 import com.example.lms.common.BaseEntity;
-
-import java.util.HashSet;
-import java.util.Set;
+import com.example.lms.enrollment.model.Enrollment;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.example.lms.Department.model.Department;
+import com.example.lms.assessment.model.QuizAttempt;
+
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.EqualsAndHashCode;
+import java.util.*;
 import com.example.lms.security.model.Role;
 
 @Data // Lombok: Generates getters, setters, toString, equals, and hashCode
@@ -40,6 +41,12 @@ public class User extends BaseEntity {
     @JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
     private Set<Role> roles = new HashSet<>();
 
+    @OneToMany(mappedBy = "student")
+    private List<QuizAttempt> quizAttempts = new ArrayList<>();
+
+    @OneToMany(mappedBy = "student")
+    private Set<Enrollment> enrollments = new HashSet<>();
+
     // In User.java
     @Column
     private long tokenVersion = 0;
@@ -57,11 +64,10 @@ public class User extends BaseEntity {
     @JoinColumn(name = "department_id")
     private Department department; // Relationship with Department
 
-   
     /**
      * Check if the raw password matches the stored encoded password
      * 
-     * @param rawPassword The raw password entered by the user
+     * @param rawPassword     The raw password entered by the user
      * @param passwordEncoder The PasswordEncoder to validate the password
      * @return true if the passwords match, false otherwise
      */
