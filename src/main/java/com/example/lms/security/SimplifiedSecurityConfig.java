@@ -121,6 +121,7 @@ public class SimplifiedSecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Public endpoints
                 .requestMatchers("/api/auth/**", "/oauth2/**").permitAll()
+                .requestMatchers("/oauth2/success").permitAll() 
                 .requestMatchers("/api/public/**").permitAll()
                 .requestMatchers("/api/health/**").permitAll()
                 .requestMatchers("/api/swagger-ui/**", "/api/v3/api-docs/**").permitAll()
@@ -142,7 +143,7 @@ public class SimplifiedSecurityConfig {
                 .authorizationEndpoint(endpoint -> 
                     endpoint.baseUri("/oauth2/authorize"))
                 .redirectionEndpoint(endpoint -> 
-                    endpoint.baseUri("/oauth2/callback/*"))
+                    endpoint.baseUri("/login/oauth2/code/*"))
                 .userInfoEndpoint(endpoint -> 
                     endpoint.userService(customOAuth2UserService))
                 .successHandler(oAuth2AuthenticationSuccessHandler)

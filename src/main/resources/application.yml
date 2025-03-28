@@ -42,6 +42,7 @@ spring:
           google:
             client-id: 1018314000990-96qt9gvqukf2nve83apl1q75gr0kt92h.apps.googleusercontent.com
             client-secret: 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
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
             scope:
               - email
               - profile

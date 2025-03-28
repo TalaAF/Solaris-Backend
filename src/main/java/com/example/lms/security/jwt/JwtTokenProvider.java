@@ -14,6 +14,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Component;
 
 import com.example.lms.user.repository.UserRepository;
@@ -57,46 +58,59 @@ public class JwtTokenProvider {
      * @return JWT token string
      */
     public String generateToken(Authentication authentication) {
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-
-
+        String username;
         Map<String, Object> claims = new HashMap<>();
         Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
-
+    
+        // Check the type of principal
+        if (authentication.getPrincipal() instanceof UserDetails) {
+            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+            username = userDetails.getUsername();
+        } else if (authentication.getPrincipal() instanceof OAuth2User) {
+            OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
+            username = oauth2User.getAttribute("email");
+            
+            // Add additional claims if needed
+            claims.put("name", oauth2User.getAttribute("name"));
+            claims.put("picture", oauth2User.getAttribute("picture"));
+        } else {
+            username = authentication.getName();
+        }
+    
+        // Process roles and permissions
         List<String> roles = authorities.stream()
                 .map(GrantedAuthority::getAuthority)
                 .filter(auth -> auth.startsWith("ROLE_"))
                 .collect(Collectors.toList());
-
+    
         List<String> permissions = authorities.stream()
                 .map(GrantedAuthority::getAuthority)
                 .filter(auth -> !auth.startsWith("ROLE_"))
                 .collect(Collectors.toList());
-
+    
         claims.put("roles", roles);
         claims.put("permissions", permissions);
         claims.put("type", "access");
-
-        String email = userDetails.getUsername();
-    com.example.lms.user.model.User user = userRepository.findByEmail(email)
-            .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
     
+        // Get your application's user entity from the repository
+        com.example.lms.user.model.User user = userRepository.findByEmail(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + username));
+        
+        // Now use your application's User type
         claims.put("userId", user.getId());
-        claims.put("tokenVersion", user.getTokenVersion()); // Add this field to User entity
+        claims.put("tokenVersion", user.getTokenVersion());
         claims.put("issuedAt", new Date().getTime());
-
+    
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtExpirationMs);
-
-        log.info("Generating token for user: {}", userDetails.getUsername());
-
+    
         return Jwts.builder()
                 .setClaims(claims)
-                .setSubject(userDetails.getUsername())
+                .setSubject(username)
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
                 .setIssuer(jwtIssuer)
-                .setId(UUID.randomUUID().toString()) // Unique token ID
+                .setId(UUID.randomUUID().toString())
                 .signWith(jwtSecret)
                 .compact();
     }
