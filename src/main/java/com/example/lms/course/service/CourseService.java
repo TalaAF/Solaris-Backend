@@ -1,6 +1,7 @@
 package com.example.lms.course.service;
 
 import com.example.lms.course.dto.CourseDTO;
+import com.example.lms.course.dto.CourseStatisticsDTO;
 import com.example.lms.course.mapper.CourseMapper;
 import com.example.lms.course.model.Course;
 import com.example.lms.course.repository.CourseRepository;
