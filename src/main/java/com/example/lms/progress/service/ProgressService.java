@@ -10,6 +10,8 @@ import com.example.lms.progress.assembler.ProgressAssembler;
 import com.example.lms.user.model.User;
 import com.example.lms.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+
+import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -83,4 +85,28 @@ public class ProgressService {
             throw new IllegalArgumentException("Progress must be between 0 and 100");
         }
     }
+
+    /**
+ * Get progress percentage for a student in a course
+ * 
+ * @param studentId Student ID
+ * @param courseId Course ID
+ * @return Progress percentage (0-100) or null if no progress
+ */
+@Transactional(readOnly = true)
+public Double getProgressPercentage(Long studentId, Long courseId) {
+    // Check if user and course exist
+    if (!userRepository.existsById(studentId) || !courseRepository.existsById(courseId)) {
+        return null;
+    }
+    
+    Optional<Progress> progress = progressRepository.findByStudentIdAndCourseId(studentId, courseId);
+    
+    // If no progress record exists, return 0
+    if (progress.isEmpty()) {
+        return 0.0;
+    }
+    
+    return progress.get().getProgress();
+}
 }
