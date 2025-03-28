@@ -77,6 +77,7 @@ public class UserMapper {
                 .email(request.getEmail())
                 .fullName(request.getFullName())
                 .password(passwordEncoder.encode(request.getPassword()))
+                .tokenVersion(0L) // Initialize token version
                 .profilePicture(request.getProfilePicture())
                 .isActive(true)
                 .department(department)

@@ -17,6 +17,9 @@ public class Certificate {
     private String certificateUrl;
     private LocalDateTime issuedAt;
     private String courseName;
+
+    @Column(unique = true)  // Assuming verification IDs should be unique
+    private String verificationId;
     @Column
 private String achievementDetails;
 

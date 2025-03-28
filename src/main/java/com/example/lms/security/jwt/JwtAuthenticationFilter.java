@@ -57,6 +57,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     // Extract user info from token
                     Long userId = tokenProvider.getUserIdFromToken(jwt);
                     Long tokenVersion = tokenProvider.getTokenVersionFromToken(jwt);
+                    if (tokenVersion == null) tokenVersion = 0L;
                     
                     // Get user from database to check current token version
                     Optional<User> userOpt = userRepository.findById(userId);

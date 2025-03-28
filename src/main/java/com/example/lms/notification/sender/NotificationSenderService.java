@@ -30,14 +30,16 @@ public class NotificationSenderService {
     private final NotificationPreferenceService preferenceService;
     private final EmailService emailService;
     
+
+    private final int defaultBatchSize = 25;     
     /**
      * Process unsent in-app notifications
      * Runs every minute
      */
     @Scheduled(fixedRate = 60000)
     @Transactional
-    public void processUnsentNotifications(int batchSize) {
-        Pageable pageable = PageRequest.of(0, batchSize);
+    public void processUnsentNotifications() {
+        Pageable pageable = PageRequest.of(0, defaultBatchSize);
         List<Notification> unsent = notificationRepository.findBySentFalseOrderByPriorityDescCreatedAtAsc(pageable);
         
         for (Notification notification : unsent) {
@@ -60,8 +62,8 @@ public class NotificationSenderService {
      */
     @Scheduled(fixedRate = 300000)
     @Transactional
-    public void processUnsentEmailNotifications(int batchSize) {
-        Pageable pageable = PageRequest.of(0, batchSize);
+    public void processUnsentEmailNotifications() {
+        Pageable pageable = PageRequest.of(0, defaultBatchSize);
         List<Notification> unsentEmails = notificationRepository
                 .findByEmailSentFalseAndSentTrueOrderByPriorityDescCreatedAtAsc(pageable);
         
