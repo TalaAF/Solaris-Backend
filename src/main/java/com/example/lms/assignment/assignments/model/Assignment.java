@@ -1,4 +1,4 @@
-package com.example.lms.assignment.assessment.model;
+package com.example.lms.assignment.assignments.model;
 
 import jakarta.persistence.*;
 import lombok.Data;

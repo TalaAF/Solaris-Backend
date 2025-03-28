@@ -1,7 +1,7 @@
 package com.example.lms.assignment.dashboard.service;
 
-import com.example.lms.assignment.assessment.model.Assignment;
-import com.example.lms.assignment.assessment.repository.AssignmentRepository;
+import com.example.lms.assignment.assignments.model.Assignment;
+import com.example.lms.assignment.assignments.repository.AssignmentRepository;
 import com.example.lms.assignment.dashboard.model.CourseProgress;
 import com.example.lms.assignment.dashboard.model.StudentDashboard;
 import com.example.lms.assignment.dashboard.model.UpcomingDeadline;
