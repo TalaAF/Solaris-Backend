@@ -11,7 +11,10 @@ import com.example.lms.security.model.Role;
 import com.example.lms.security.repository.RoleRepository;
 import com.example.lms.user.model.User;
 import com.example.lms.user.repository.UserRepository;
+
+import io.jsonwebtoken.Claims;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,7 +46,7 @@ public class SimplifiedAuthService {
     private final RefreshTokenService refreshTokenService;
 
     @Transactional
-    public AuthResponse login(LoginRequest loginRequest) {
+    public AuthResponse login(LoginRequest loginRequest, HttpServletRequest request) {
         log.info("Processing login request for user: {}", loginRequest.getEmail());
 
         // Authenticate user with Spring Security
@@ -56,13 +59,14 @@ public class SimplifiedAuthService {
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         // Generate JWT access token
-        String jwt = tokenProvider.generateToken(authentication);
+        String jwt = tokenProvider.generateToken(authentication, request);
 
         // Get user from repository
         User user = userRepository.findByEmail(loginRequest.getEmail())
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
-        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
+        Claims claims = tokenProvider.parseToken(jwt);
+    String tokenId = claims.get("tokenId", String.class);
 
         // Join role names with comma for the response
         String roleNames = user.getRoles().stream()
@@ -71,7 +75,7 @@ public class SimplifiedAuthService {
 
         log.info("User {} successfully logged in", user.getEmail());
 
-        return new AuthResponse(jwt, refreshToken.getToken(), user.getId(), user.getEmail(), roleNames);
+        return new AuthResponse(jwt, tokenId, user.getId(), user.getEmail(), roleNames);
     }
 
     /**
@@ -81,7 +85,7 @@ public class SimplifiedAuthService {
      * @return AuthResponse with tokens and user info
      */
     @Transactional
-    public AuthResponse register(RegisterRequest registerRequest) {
+    public AuthResponse register(RegisterRequest registerRequest, HttpServletRequest request) {
         log.info("Processing registration for user: {}", registerRequest.getEmail());
 
         // Check if email is already taken
@@ -128,10 +132,11 @@ public class SimplifiedAuthService {
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         // Generate JWT access token
-        String jwt = tokenProvider.generateToken(authentication);
+        String jwt = tokenProvider.generateToken(authentication, request);
 
-        RefreshToken refreshToken = refreshTokenService.createRefreshToken(savedUser.getId());
-
+        // Get tokenId from generated JWT
+    Claims claims = tokenProvider.parseToken(jwt);
+    String tokenId = claims.get("tokenId", String.class);
         // Join role names with comma for the response
         String roleNames = savedUser.getRoles().stream()
                 .map(Role::getName)
@@ -140,7 +145,7 @@ public class SimplifiedAuthService {
         log.info("User {} successfully registered", savedUser.getEmail());
 
         // Return AuthResponse with tokens and user info
-        return new AuthResponse(jwt, refreshToken.getToken(), savedUser.getId(), savedUser.getEmail(), roleNames);
+        return new AuthResponse(jwt, tokenId, savedUser.getId(), savedUser.getEmail(), roleNames);
     }
 
     /**

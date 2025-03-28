@@ -3,6 +3,7 @@ package com.example.lms.security.jwt;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +17,11 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Component;
+import org.springframework.mock.web.MockHttpServletRequest;
 
+
+import com.example.lms.security.token.model.UserToken;
+import com.example.lms.security.token.service.TokenStoreService;
 import com.example.lms.user.repository.UserRepository;
 
 import javax.annotation.PostConstruct;
@@ -29,6 +34,7 @@ import java.util.stream.Collectors;
  */
 @Component
 @Slf4j
+
 public class JwtTokenProvider {
 
     @Value("${app.jwt.secret:secretKeyToBeChangedInProduction}")
@@ -41,6 +47,9 @@ public class JwtTokenProvider {
     private String jwtIssuer;
 
     private SecretKey jwtSecret;
+
+    @Autowired
+    private TokenStoreService tokenStoreService;
 
     @Autowired
     private UserRepository userRepository;
@@ -57,7 +66,7 @@ public class JwtTokenProvider {
      * @param authentication The authenticated user
      * @return JWT token string
      */
-    public String generateToken(Authentication authentication) {
+    public String generateToken(Authentication authentication ,HttpServletRequest request) {
         String username;
         Map<String, Object> claims = new HashMap<>();
         Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
@@ -96,6 +105,11 @@ public class JwtTokenProvider {
         com.example.lms.user.model.User user = userRepository.findByEmail(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + username));
         
+                 UserToken userToken = tokenStoreService.createToken(
+        user,
+        request.getHeader("User-Agent"),
+        request.getRemoteAddr()
+    );
         // Now use your application's User type
         claims.put("userId", user.getId());
         claims.put("tokenVersion", user.getTokenVersion());
@@ -161,14 +175,14 @@ public class JwtTokenProvider {
             Claims claims = parseToken(token);
 
             // Check if token type is "access"
-            String tokenType = claims.get("type", String.class);
-            if (!"access".equals(tokenType)) {
-                log.error("Invalid token type: {}", tokenType);
+            String tokenId = claims.get("tokenId", String.class);
+            if (tokenId == null) {
+                log.error("Token ID is missing in the token claims");
                 return false;
             }
 
             // Token is valid
-            return true;
+            return tokenStoreService.validateToken(tokenId);
         } catch (SignatureException ex) {
             log.error("Invalid JWT signature: {}", ex.getMessage());
         } catch (MalformedJwtException ex) {
@@ -228,7 +242,7 @@ public class JwtTokenProvider {
      * @param token The JWT token
      * @return Claims
      */
-    private Claims parseToken(String token) {
+    public Claims parseToken(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(jwtSecret)
                 .build()
@@ -278,4 +292,10 @@ public class JwtTokenProvider {
                 .signWith(jwtSecret)
                 .compact();
     }
+    // Add this method to JwtTokenProvider
+public String generateToken(Authentication authentication) {
+    // Create a mock HttpServletRequest
+    HttpServletRequest mockRequest = new MockHttpServletRequest();
+    return generateToken(authentication, mockRequest);
+}
 }
