@@ -109,4 +109,15 @@ public byte[] generateCertificatePDF(Long certificateId) throws IOException, com
     
     document.close();
         return baos.toByteArray(); 
-}}
+}
+@Transactional
+public Certificate revokeCertificate(Long certificateId, String reason) {
+    Certificate certificate = certificateRepository.findById(certificateId)
+            .orElseThrow(() -> new ResourceNotFoundException("Certificate not found"));
+    
+    certificate.setRevoked(true);
+    certificate.setRevocationReason(reason);
+    
+    return certificateRepository.save(certificate);
+}
+}

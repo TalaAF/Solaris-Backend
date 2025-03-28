@@ -16,6 +16,22 @@ public class Certificate {
     private Long courseId;
     private String certificateUrl;
     private LocalDateTime issuedAt;
+    @Column
+private String achievementDetails;
+
+@Column
+private Integer grade;
+
+@Column
+private String issuerName;
+
+@Column
+private String issuerSignature;
+@Column
+private boolean isRevoked;
+
+@Column
+private String revocationReason;
 
     public Certificate() {}
 
