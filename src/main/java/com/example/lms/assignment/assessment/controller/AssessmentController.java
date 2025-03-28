@@ -1,7 +1,7 @@
 package com.example.lms.assignment.assessment.controller;
 
-import com.example.lms.assignment.assessment.model.Assignment;
-import com.example.lms.assignment.assessment.repository.AssignmentRepository;
+import com.example.lms.assignment.assignments.model.Assignment;
+import com.example.lms.assignment.assignments.repository.AssignmentRepository;
 import com.example.lms.assignment.submission.model.Submission;
 import com.example.lms.assignment.submission.repository.SubmissionRepository;
 import com.example.lms.course.repository.CourseRepository;
