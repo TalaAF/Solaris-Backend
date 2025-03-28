@@ -1,6 +1,7 @@
 package com.example.lms.report.dto;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -18,7 +19,10 @@ public class CompletionReportDTO {
     private boolean isCompleted;
     private LocalDateTime reportGeneratedAt;
     private String additionalMetrics;
+    private String performanceCategory; 
     
+private Map<String, String> metadata;
+private String studentName;
     // Add derived/computed fields
     private transient double averageProgress;
     private transient int completedCoursesCount;
