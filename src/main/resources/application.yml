@@ -22,7 +22,7 @@ spring:
   mail:
     host: smtp.example.com
     port: 587
-    username: your-username@example.com
+    username: sajashawawra@gmail.com
     password: your-password
     properties:
       mail:

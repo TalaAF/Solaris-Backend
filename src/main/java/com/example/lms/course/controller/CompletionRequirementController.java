@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -91,6 +92,7 @@ public class CompletionRequirementController {
      * @return Boolean indicating whether the student has completed the course
      */
     @GetMapping("/verify/{studentId}/{courseId}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('INSTRUCTOR') or (hasRole('STUDENT') and #studentId == authentication.principal.id)")
     @Operation(summary = "Verify course completion for a student", 
                description = "Checks if a student has met all the completion requirements for a course")
     @ApiResponses(value = {
