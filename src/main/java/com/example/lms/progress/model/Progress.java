@@ -34,6 +34,9 @@ public class Progress {
     @Column(nullable = false)
     private LocalDateTime lastUpdated;
 
+    public Progress() {
+    }
+
     // Constructors, Getters, Setters
     public Progress(User student, Course course, Double progress, LocalDateTime lastUpdated) {
         this.student = student;

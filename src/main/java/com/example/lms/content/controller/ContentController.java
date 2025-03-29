@@ -4,59 +4,66 @@ import com.example.lms.common.Exception.ResourceNotFoundException;
 import com.example.lms.content.dto.ContentDTO;
 import com.example.lms.content.service.ContentService;
 import com.example.lms.course.dto.CourseDTO;
-
 import lombok.RequiredArgsConstructor;
-
 import com.example.lms.content.model.Content;
 import com.example.lms.content.model.ContentVersion;
-
 import org.springframework.data.domain.PageRequest;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 @RestController
 @RequestMapping("/api/contents")
 @RequiredArgsConstructor
+@Tag(name = "Content", description = "APIs for managing course contents")
+@SecurityRequirement(name = "bearerAuth")
 public class ContentController {
 
     private final ContentService contentService;
 
-   // Create new content
-   @PostMapping
-   public ResponseEntity<?> createContent(
-           @RequestParam Long courseId,
-           @RequestParam MultipartFile file,
-           @RequestParam String title,
-           @RequestParam(required = false) String description) {
-
-       if (file.isEmpty() || title.isBlank()) {
-           Map<String, String> errorResponse = new HashMap<>();
+    @PostMapping
+    @PreAuthorize("hasRole('INSTRUCTOR') or hasRole('ADMIN')")
+    @Operation(summary = "Create new content", description = "Creates new content for a course")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Content created successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid input"),
+        @ApiResponse(responseCode = "403", description = "Access denied"),
+        @ApiResponse(responseCode = "404", description = "Course not found")
+    })
+    public ResponseEntity<?> createContent(
+            @RequestParam Long courseId,
+            @RequestParam MultipartFile file,
+            @RequestParam String title,
+            @RequestParam(required = false) String description) {
+        
+        if (file.isEmpty() || title.isBlank()) {
+            Map<String, String> errorResponse = new HashMap<>();
             errorResponse.put("error", "File and title are required.");
             return ResponseEntity.badRequest().body(errorResponse);
-       }
+        }
 
-       try {
+        try {
             Content content = contentService.createContent(courseId, file, title, description);
             ContentDTO contentDTO = contentService.convertToDTO(content);
-            
-            // HATEOAS links as in your original code
-            
             return ResponseEntity.ok(contentDTO);
         } catch (ResourceNotFoundException e) {
             Map<String, String> errorResponse = new HashMap<>();
@@ -68,15 +75,19 @@ public class ContentController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
-   
-    // Get content by ID
+
     @GetMapping("/{id}")
+    @Operation(summary = "Get content by ID", description = "Retrieves content by its ID")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Content retrieved successfully"),
+        @ApiResponse(responseCode = "404", description = "Content not found")
+    })
     public ResponseEntity<EntityModel<ContentDTO>> getContentById(
             @PathVariable Long id,
-            @RequestParam(required = false) Long userId) { // Make userId optional
+            @RequestParam(required = false) Long userId) {
 
         if (userId != null) {
-            contentService.logContentAccess(id, userId); // // Check in if userId is provided
+            contentService.logContentAccess(id, userId);
         }
     
         Optional<Content> content = contentService.getContentById(id);
@@ -90,52 +101,67 @@ public class ContentController {
         return ResponseEntity.notFound().build();
     }
 
-    // Get all content for a given course
-   @GetMapping("/course/{courseId}")
-   public ResponseEntity<CollectionModel<EntityModel<ContentDTO>>> getContentsByCourseId(@PathVariable Long courseId) {
-       List<Content> contents = contentService.getContentsByCourseId(courseId);
-       if (contents.isEmpty()) {
-           return ResponseEntity.noContent().build();
-       }
+    @GetMapping("/course/{courseId}")
+    @Operation(summary = "Get contents by course", description = "Retrieves all contents for a course")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Contents retrieved successfully"),
+        @ApiResponse(responseCode = "204", description = "No contents found")
+    })
+    public ResponseEntity<CollectionModel<EntityModel<ContentDTO>>> getContentsByCourseId(@PathVariable Long courseId) {
+        List<Content> contents = contentService.getContentsByCourseId(courseId);
+        if (contents.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
 
-       List<EntityModel<ContentDTO>> contentModels = contents.stream()
-               .map(content -> {
-                   ContentDTO contentDTO = contentService.convertToDTO(content);
-                   EntityModel<ContentDTO> contentModel = EntityModel.of(contentDTO);
-                   contentModel.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(ContentController.class).getContentById(content.getId(), null)).withSelfRel()); // Pass null for userId
-                   contentModel.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(ContentController.class).getContentsByCourseId(courseId)).withRel("course-contents"));
-                   return contentModel;
-               })
-               .collect(Collectors.toList());
+        List<EntityModel<ContentDTO>> contentModels = contents.stream()
+                .map(content -> {
+                    ContentDTO contentDTO = contentService.convertToDTO(content);
+                    EntityModel<ContentDTO> contentModel = EntityModel.of(contentDTO);
+                    contentModel.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(ContentController.class).getContentById(content.getId(), null)).withSelfRel());
+                    contentModel.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(ContentController.class).getContentsByCourseId(courseId)).withRel("course-contents"));
+                    return contentModel;
+                })
+                .collect(Collectors.toList());
 
-       CollectionModel<EntityModel<ContentDTO>> collectionModel = CollectionModel.of(contentModels);
-       collectionModel.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(ContentController.class).getContentsByCourseId(courseId)).withSelfRel());
+        CollectionModel<EntityModel<ContentDTO>> collectionModel = CollectionModel.of(contentModels);
+        collectionModel.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(ContentController.class).getContentsByCourseId(courseId)).withSelfRel());
 
-       return ResponseEntity.ok(collectionModel);
-   }
+        return ResponseEntity.ok(collectionModel);
+    }
 
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('INSTRUCTOR') or hasRole('ADMIN')")
+    @Operation(summary = "Update content", description = "Updates existing content")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Content updated successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid input"),
+        @ApiResponse(responseCode = "403", description = "Access denied"),
+        @ApiResponse(responseCode = "404", description = "Content not found")
+    })
+    public ResponseEntity<?> updateContent(
+            @PathVariable Long id,
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) String description) {
 
-     // Update existing content
-     @PutMapping("/{id}")
-     public ResponseEntity<?> updateContent(
-             @PathVariable Long id,
-             @RequestParam(required = false) String title,
-             @RequestParam(required = false) String description) {
- 
-         Optional<Content> updatedContent = contentService.updateContent(id, title, description);
-         if (updatedContent.isPresent()) {
-             ContentDTO contentDTO = contentService.convertToDTO(updatedContent.get());
- 
-             EntityModel<ContentDTO> contentModel = EntityModel.of(contentDTO);
-             contentModel.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(ContentController.class).getContentById(id, null)).withSelfRel()); // Pass null for userId
-             contentModel.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(ContentController.class).getContentsByCourseId(updatedContent.get().getCourse().getId())).withRel("course-contents"));
-             return ResponseEntity.ok(contentModel);
-         }
-         return ResponseEntity.notFound().build();
-     }
+        Optional<Content> updatedContent = contentService.updateContent(id, title, description);
+        if (updatedContent.isPresent()) {
+            ContentDTO contentDTO = contentService.convertToDTO(updatedContent.get());
+            EntityModel<ContentDTO> contentModel = EntityModel.of(contentDTO);
+            contentModel.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(ContentController.class).getContentById(id, null)).withSelfRel());
+            contentModel.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(ContentController.class).getContentsByCourseId(updatedContent.get().getCourse().getId())).withRel("course-contents"));
+            return ResponseEntity.ok(contentModel);
+        }
+        return ResponseEntity.notFound().build();
+    }
 
-    // Delete content
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('INSTRUCTOR') or hasRole('ADMIN')")
+    @Operation(summary = "Delete content", description = "Deletes content by ID")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Content deleted successfully"),
+        @ApiResponse(responseCode = "403", description = "Access denied"),
+        @ApiResponse(responseCode = "404", description = "Content not found")
+    })
     public ResponseEntity<Void> deleteContent(@PathVariable Long id) {
         if (contentService.deleteContent(id)) {
             return ResponseEntity.noContent().build();
@@ -143,27 +169,39 @@ public class ContentController {
         return ResponseEntity.notFound().build();
     }
 
-    // Get content versions
     @GetMapping("/{id}/versions")
+    @Operation(summary = "Get content versions", description = "Retrieves version history of content")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Versions retrieved successfully"),
+        @ApiResponse(responseCode = "404", description = "Content not found")
+    })
     public ResponseEntity<List<ContentVersion>> getContentVersions(@PathVariable Long id) {
         List<ContentVersion> versions = contentService.getContentVersions(id);
         return ResponseEntity.ok(versions);
     }
 
-    
-  // Search content by keyword
-  @GetMapping("/search")
-  public ResponseEntity<Page<Content>> search(
-          @RequestParam String keyword,
-          @RequestParam(defaultValue = "0") int page,
-          @RequestParam(defaultValue = "10") int size) {
-      Pageable pageable = PageRequest.of(page, size);
-      Page<Content> result = contentService.searchByKeyword(keyword, pageable);
-      return ResponseEntity.ok(result);}
-    
-      @GetMapping("/filter")
-      public List<Content> filterContents(@RequestParam(required = false) String tags, 
-                                          @RequestParam(required = false) String fileType) {
-          return contentService.filterContents(tags, fileType);
-      }
+    @GetMapping("/search")
+    @Operation(summary = "Search contents", description = "Searches contents by keyword")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Search results retrieved")
+    })
+    public ResponseEntity<Page<Content>> search(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Content> result = contentService.searchByKeyword(keyword, pageable);
+        return ResponseEntity.ok(result);
     }
+
+    @GetMapping("/filter")
+    @Operation(summary = "Filter contents", description = "Filters contents by tags or file type")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Filtered results retrieved")
+    })
+    public List<Content> filterContents(
+            @RequestParam(required = false) String tags, 
+            @RequestParam(required = false) String fileType) {
+        return contentService.filterContents(tags, fileType);
+    }
+}
