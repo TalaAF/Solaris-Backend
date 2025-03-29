@@ -78,6 +78,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         log.debug("Token is valid in token store: {}", tokenId);
                         // Set authentication in security context
                         Authentication auth = tokenProvider.getAuthentication(jwt);
+                        log.debug("Authorities set in SecurityContext: {}", auth.getAuthorities());
                         SecurityContextHolder.getContext().setAuthentication(auth);
                         log.debug("Set authentication in Security Context for path: {}", request.getRequestURI());
                     } else {
