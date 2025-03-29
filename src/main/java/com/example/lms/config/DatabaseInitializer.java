@@ -43,6 +43,8 @@ import com.example.lms.user.repository.UserProfileRepository;
 import com.example.lms.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -65,6 +67,8 @@ public class DatabaseInitializer {
 
     private final PasswordEncoder passwordEncoder;
 
+    @Value("${app.database.initialize:true}")
+    private boolean initializeDatabase;
     @Bean
     public CommandLineRunner initDatabase(
             DepartmentRepository departmentRepository,
@@ -94,8 +98,13 @@ public class DatabaseInitializer {
             CertificateRepository certificateRepository
     ) {
         return args -> {
-            log.info("Loading Healthcare LMS database with test data...");
+            if (!initializeDatabase) {
+                log.info("Database initialization is disabled via configuration.");
+                return;
+            }
 
+            try {
+                log.info("Loading Healthcare LMS database with test data...");  
             // Check if data already exists
             if (userRepository.count() > 0) {
                 log.info("Database already contains data, skipping initialization.");
@@ -439,6 +448,10 @@ public class DatabaseInitializer {
             createCertificate(certificateRepository, studentPatel.getId(), anatomyCourse.getId(), "certificate_patel_anatomy.pdf", LocalDateTime.now().minusDays(11), "Human Anatomy Fundamentals");
             
             log.info("Database initialized with healthcare LMS test data!");
+        } catch (Exception e) {
+            log.error("Failed to initialize database with test data", e);
+            throw e;
+        }
         };
     }
     
