@@ -2,29 +2,34 @@ package com.example.lms.certificate.controller;
 
 import com.example.lms.certificate.assembler.CertificateAssembler;
 import com.example.lms.certificate.dto.CertificateDTO;
-import com.example.lms.certificate.mapper.CertificateMapper;
 import com.example.lms.certificate.model.Certificate;
 import com.example.lms.certificate.service.CertificateService;
 
-import jakarta.transaction.Transactional;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
-import java.nio.file.Path;
-import org.springframework.core.io.Resource;
-import org.springframework.http.MediaType;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import org.springframework.http.HttpHeaders;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * REST controller for certificate management
+ */
 @RestController
 @RequestMapping("/api/certificates")
+@Tag(name = "certificates", description = "Certificate management API")
 public class CertificateController {
 
     @Autowired
@@ -33,22 +38,61 @@ public class CertificateController {
     @Autowired
     private CertificateAssembler certificateAssembler;
 
-    
+    /**
+     * Generate a certificate for a student who completed a course
+     */
     @PostMapping("/generate/{studentId}/{courseId}")
-    public ResponseEntity<CertificateDTO> generateCertificate(@PathVariable Long studentId, @PathVariable Long courseId) {
+    @Operation(
+        summary = "Generate a certificate for a student",
+        description = "Creates a new certificate for a student who has completed a course"
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Certificate successfully generated", 
+                     content = @Content(schema = @Schema(implementation = CertificateDTO.class))),
+        @ApiResponse(responseCode = "400", description = "Bad request - invalid parameters"),
+        @ApiResponse(responseCode = "404", description = "Student or course not found"),
+        @ApiResponse(responseCode = "403", description = "Unauthorized access or course not completed")
+    })
+    public ResponseEntity<CertificateDTO> generateCertificate(
+            @Parameter(description = "ID of the student") @PathVariable Long studentId,
+            @Parameter(description = "ID of the course") @PathVariable Long courseId) {
         Certificate certificate = certificateService.generateCertificate(studentId, courseId);
         return ResponseEntity.ok(certificateAssembler.toDTO(certificate));
     }
 
-   
+    /**
+     * Get certificate by ID
+     */
     @GetMapping("/{certificateId}")
-    public ResponseEntity<CertificateDTO> getCertificateById(@PathVariable Long certificateId) {
+    @Operation(
+        summary = "Get certificate by ID",
+        description = "Retrieves a certificate by its unique identifier"
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Certificate found", 
+                     content = @Content(schema = @Schema(implementation = CertificateDTO.class))),
+        @ApiResponse(responseCode = "404", description = "Certificate not found")
+    })
+    public ResponseEntity<CertificateDTO> getCertificateById(
+            @Parameter(description = "ID of the certificate") @PathVariable Long certificateId) {
         Certificate certificate = certificateService.getCertificateById(certificateId);
         return ResponseEntity.ok(certificateAssembler.toDTO(certificate));
     }
 
+    /**
+     * Get certificates by student
+     */
     @GetMapping("/student/{studentId}")
-    public ResponseEntity<List<CertificateDTO>> getCertificatesByStudent(@PathVariable Long studentId) {
+    @Operation(
+        summary = "Get certificates by student",
+        description = "Retrieves all certificates for a specific student"
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "List of certificates"),
+        @ApiResponse(responseCode = "404", description = "Student not found")
+    })
+    public ResponseEntity<List<CertificateDTO>> getCertificatesByStudent(
+            @Parameter(description = "ID of the student") @PathVariable Long studentId) {
         List<Certificate> certificates = certificateService.getCertificatesByStudent(studentId);
         List<CertificateDTO> certificateDTOs = certificates.stream()
                 .map(certificateAssembler::toDTO)
@@ -56,9 +100,20 @@ public class CertificateController {
         return ResponseEntity.ok(certificateDTOs);
     }
 
-
+    /**
+     * Get certificates by course
+     */
     @GetMapping("/course/{courseId}")
-    public ResponseEntity<List<CertificateDTO>> getCertificatesByCourse(@PathVariable Long courseId) {
+    @Operation(
+        summary = "Get certificates by course",
+        description = "Retrieves all certificates issued for a specific course"
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "List of certificates"),
+        @ApiResponse(responseCode = "404", description = "Course not found")
+    })
+    public ResponseEntity<List<CertificateDTO>> getCertificatesByCourse(
+            @Parameter(description = "ID of the course") @PathVariable Long courseId) {
         List<Certificate> certificates = certificateService.getCertificatesByCourse(courseId);
         List<CertificateDTO> certificateDTOs = certificates.stream()
                 .map(certificateAssembler::toDTO)
@@ -66,8 +121,15 @@ public class CertificateController {
         return ResponseEntity.ok(certificateDTOs);
     }
 
-
+    /**
+     * Get all certificates
+     */
     @GetMapping
+    @Operation(
+        summary = "Get all certificates",
+        description = "Retrieves all certificates in the system"
+    )
+    @ApiResponse(responseCode = "200", description = "List of all certificates")
     public ResponseEntity<List<CertificateDTO>> getAllCertificates() {
         List<Certificate> certificates = certificateService.getAllCertificates();
         List<CertificateDTO> certificateDTOs = certificates.stream()
@@ -76,38 +138,73 @@ public class CertificateController {
         return ResponseEntity.ok(certificateDTOs);
     }
     
-
-// Add endpoint to CertificateController.java
-@GetMapping("/verify/{verificationId}")
-public ResponseEntity<Boolean> verifyCertificate(@PathVariable String verificationId) {
-    boolean isValid = certificateService.verifyCertificate(verificationId);
-    return ResponseEntity.ok(isValid);
-}
-@GetMapping("/{certificateId}/download")
-public ResponseEntity<byte[]> downloadCertificate(@PathVariable Long certificateId) {
-    try {
-        byte[] certificatePdf = certificateService.generateCertificatePDF(certificateId);
-        
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_PDF);
-        headers.setContentDispositionFormData("attachment", "certificate.pdf");
-        
-        return new ResponseEntity<>(certificatePdf, headers, HttpStatus.OK);
-    } catch (Exception e) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    /**
+     * Verify a certificate
+     */
+    @GetMapping("/verify/{verificationId}")
+    @Operation(
+        summary = "Verify certificate",
+        description = "Verifies the authenticity of a certificate using its verification ID"
+    )
+    @ApiResponse(responseCode = "200", description = "Certificate verification result")
+    public ResponseEntity<Boolean> verifyCertificate(
+            @Parameter(description = "Verification ID of the certificate") @PathVariable String verificationId) {
+        boolean isValid = certificateService.verifyCertificate(verificationId);
+        return ResponseEntity.ok(isValid);
     }
-}
-@PostMapping("/batch/{courseId}")
-public ResponseEntity<List<CertificateDTO>> generateBatchCertificates(
-        @PathVariable Long courseId,
-        @RequestBody List<Long> studentIds) {
     
-    List<Certificate> certificates = certificateService.generateBatchCertificates(courseId, studentIds);
+    /**
+     * Download certificate as PDF
+     */
+    @GetMapping("/{certificateId}/download")
+    @Operation(
+        summary = "Download certificate",
+        description = "Downloads a certificate as a PDF file"
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Certificate PDF file", 
+                     content = @Content(mediaType = "application/pdf", schema = @Schema(type = "string", format = "binary"))),
+        @ApiResponse(responseCode = "404", description = "Certificate not found"),
+        @ApiResponse(responseCode = "500", description = "Error generating PDF")
+    })
+    public ResponseEntity<byte[]> downloadCertificate(
+            @Parameter(description = "ID of the certificate") @PathVariable Long certificateId) {
+        try {
+            byte[] certificatePdf = certificateService.generateCertificatePDF(certificateId);
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDispositionFormData("attachment", "certificate.pdf");
+            
+            return new ResponseEntity<>(certificatePdf, headers, HttpStatus.OK);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
     
-    List<CertificateDTO> certificateDTOs = certificates.stream()
-            .map(CertificateMapper::toDTO)
-            .collect(Collectors.toList());
-    
-    return ResponseEntity.ok(certificateDTOs);
-}
+    /**
+     * Generate certificates for multiple students
+     */
+    @PostMapping("/batch/{courseId}")
+    @Operation(
+        summary = "Generate batch certificates",
+        description = "Generates certificates for multiple students in a course"
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Certificates successfully generated"),
+        @ApiResponse(responseCode = "400", description = "Bad request - invalid parameters"),
+        @ApiResponse(responseCode = "404", description = "Course not found")
+    })
+    public ResponseEntity<List<CertificateDTO>> generateBatchCertificates(
+            @Parameter(description = "ID of the course") @PathVariable Long courseId,
+            @Parameter(description = "List of student IDs") @RequestBody List<Long> studentIds) {
+        
+        List<Certificate> certificates = certificateService.generateBatchCertificates(courseId, studentIds);
+        
+        List<CertificateDTO> certificateDTOs = certificates.stream()
+                .map(certificateAssembler::toDTO)
+                .collect(Collectors.toList());
+        
+        return ResponseEntity.ok(certificateDTOs);
+    }
 }
