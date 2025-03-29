@@ -17,6 +17,14 @@ import com.example.lms.user.repository.UserRepository;
 import com.example.lms.security.token.service.TokenStoreService;
 import com.example.lms.security.token.model.UserToken;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -33,6 +41,14 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "Authentication", description = "API endpoints for user authentication and registration")
+@ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successful operation",
+                content = @Content(schema = @Schema(implementation = AuthResponse.class))),
+        @ApiResponse(responseCode = "400", description = "Bad request"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "403", description = "Forbidden")
+})
 public class AuthController {
 
     private final SimplifiedAuthService authService;
@@ -41,6 +57,13 @@ public class AuthController {
     private final UserRepository userRepository;
     private final TokenStoreService tokenStoreService;
     @PostMapping("/login")
+    @Operation(summary = "User login", description = "Authenticate user and return JWT token")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Login successful",
+                    content = @Content(schema = @Schema(implementation = AuthResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Invalid credentials"),
+            @ApiResponse(responseCode = "403", description = "Access denied")
+    })
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest loginRequest, HttpServletRequest request) {
         log.info("Login request received for: {}", loginRequest.getEmail());
         try {
@@ -53,6 +76,13 @@ public class AuthController {
     }
 
     @PostMapping("/register")
+    @Operation(summary = "User registration", description = "Register a new user")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Registration successful",
+                    content = @Content(schema = @Schema(implementation = AuthResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid input"),
+            @ApiResponse(responseCode = "409", description = "User already exists")
+    })
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest registerRequest, HttpServletRequest request) {
         log.info("Registration request received for: {}", registerRequest.getEmail());
         try {
@@ -65,6 +95,13 @@ public class AuthController {
     }
     
     @PostMapping("/refresh-token")
+    @Operation(summary = "Refresh JWT token", description = "Refresh the access token using the refresh token")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Token refreshed successfully",
+                    content = @Content(schema = @Schema(implementation = TokenRefreshResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid refresh token"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
     public ResponseEntity<TokenRefreshResponse> refreshToken(@Valid @RequestBody TokenRefreshRequest request,
         HttpServletRequest httpRequest) {
         log.info("Token refresh request received");
@@ -91,6 +128,12 @@ public class AuthController {
      }
     
      @PostMapping("/logout")
+    @Operation(summary = "User logout", description = "Logout user and invalidate refresh token")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Logout successful",
+                    content = @Content(schema = @Schema(implementation = MessageResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid request"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")})
      public ResponseEntity<MessageResponse> logoutUser(@Valid @RequestBody LogoutRequest logoutRequest) {
             try {
         // Extract token ID from the JWT
@@ -109,8 +152,4 @@ public class AuthController {
                 .body(new MessageResponse("Error during logout: " + e.getMessage()));
     }
      }
-         @GetMapping("/test")
-    public ResponseEntity<String> test() {
-        return ResponseEntity.ok("Auth endpoint is working");
-    }
 }
