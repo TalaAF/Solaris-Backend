@@ -2,16 +2,18 @@
 
 springdoc:  
   api-docs:  
-    path: /v3/api-docs  
+    path: /api/v3/api-docs
+    enabled: true
   swagger-ui:  
-    path: /swagger-ui.html  
+    path: /api/swagger-ui.html
     operations-sorter: method  
     tags-sorter: alpha
+    enabled: true
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/TestDB
     username: postgres
-    password: MST
+    password: A!ciRche@postG
     
 
   main:

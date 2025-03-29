@@ -123,7 +123,8 @@ public class SimplifiedSecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Public endpoints
                 .requestMatchers("/api/auth/**", "/oauth2/**", "/api/public/**", 
-                     "/api/health/**", "/api/swagger-ui/**", "/api/v3/api-docs/**").permitAll()
+                     "/api/health/**", "/api/swagger-ui.html","/api/swagger-ui/**", 
+                 "/api/v3/api-docs", "/api/v3/api-docs/**").permitAll()
                 // Admin endpoints
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 // All other endpoints need authentication
