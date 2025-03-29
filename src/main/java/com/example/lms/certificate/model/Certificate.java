@@ -1,11 +1,17 @@
 package com.example.lms.certificate.model;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 @Data
 @Entity
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class Certificate {
 
     @Id
@@ -39,7 +45,6 @@ private String revocationReason;
 @Column
 private String linkedInSharingUrl;
  
-    public Certificate() {}
 
     public Certificate(Long studentId, Long courseId, String certificateUrl , String courseName) {
         this.studentId = studentId;

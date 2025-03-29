@@ -6,12 +6,9 @@ import com.example.lms.security.model.SecurityEndpoint;
 import com.example.lms.security.repository.PermissionRepository;
 import com.example.lms.security.repository.RoleRepository;
 import com.example.lms.security.repository.SecurityEndpointRepository;
-import com.example.lms.user.model.User;
-import com.example.lms.user.repository.UserRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,9 +21,9 @@ import java.util.Set;
 public class SecurityInitializationService {
     private final PermissionRepository permissionRepository;
     private final RoleRepository roleRepository;
-    private final UserRepository userRepository;
+   // private final UserRepository userRepository;
     private final SecurityEndpointRepository securityEndpointRepository;
-    private final PasswordEncoder passwordEncoder;
+   // private final PasswordEncoder passwordEncoder;
     
     @PostConstruct
     @Transactional

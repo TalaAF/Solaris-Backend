@@ -11,6 +11,7 @@ import com.itextpdf.text.Paragraph;
 import com.itextpdf.text.pdf.PdfWriter;
 
 import io.jsonwebtoken.io.IOException;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,15 +28,30 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
 public class CertificateService {
 
     @Autowired
     private CertificateRepository certificateRepository;
 
     public Certificate generateCertificate(Long studentId, Long courseId) {
-        String certificateUrl = "https://lms.com/certificates/" + studentId + "/" + courseId; 
-
-        Certificate certificate = new Certificate(studentId, courseId, certificateUrl);
+        log.info("Generating certificate for student ID: {} and course ID: {}", studentId, courseId);
+        // Validate student
+        userRepository.findById(studentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Student not found with ID: " + studentId));
+        
+        // Validate course
+        courseRepository.findById(courseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Course not found with ID: " + courseId));
+        
+        // Check if certificate already exists
+        if (certificateExists(studentId, courseId)) {
+            throw new IllegalStateException("Certificate already exists for student " + studentId + " in course " + courseId);
+        }
+    
+        String certificateUrl = "https://lms.com/certificates/" + studentId + "/" + courseId;
+        Certificate certificate = new Certificate(studentId, courseId, certificateUrl, courseRepository.findById(courseId).get().getTitle());
+        log.info("Certificate URL: {}", certificateUrl);
         return certificateRepository.save(certificate);
     }
     
@@ -105,11 +121,14 @@ public byte[] generateCertificatePDF(Long certificateId) throws IOException, com
     document.open();
     
     // Add certificate content
-    document.add(new Paragraph("Certificate of Completion"));
-    document.add(new Paragraph("This is to certify that " + student.getFullName() + 
-                               " has successfully completed the course " + course.getTitle()));
-    // Add more styling and content
-    
+    document.add(new Paragraph("Certificate of Completion", new com.itextpdf.text.Font(com.itextpdf.text.Font.FontFamily.HELVETICA, 24, com.itextpdf.text.Font.BOLD)));
+    document.add(new Paragraph("\n"));
+    document.add(new Paragraph("This is to certify that", new com.itextpdf.text.Font(com.itextpdf.text.Font.FontFamily.HELVETICA, 14)));
+    document.add(new Paragraph(student.getFullName(), new com.itextpdf.text.Font(com.itextpdf.text.Font.FontFamily.HELVETICA, 18, com.itextpdf.text.Font.BOLD)));
+    document.add(new Paragraph("has successfully completed the course", new com.itextpdf.text.Font(com.itextpdf.text.Font.FontFamily.HELVETICA, 14)));
+    document.add(new Paragraph(course.getTitle(), new com.itextpdf.text.Font(com.itextpdf.text.Font.FontFamily.HELVETICA, 16)));
+    document.add(new Paragraph("Issued on: " + certificate.getIssuedAt().toString(), new com.itextpdf.text.Font(com.itextpdf.text.Font.FontFamily.HELVETICA, 12)));
+
     document.close();
         return baos.toByteArray(); 
 }
