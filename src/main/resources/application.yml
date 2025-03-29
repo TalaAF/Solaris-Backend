@@ -1,8 +1,18 @@
+
+
+springdoc:  
+  api-docs:  
+    path: /v3/api-docs  
+  swagger-ui:  
+    path: /swagger-ui.html  
+    operations-sorter: method  
+    tags-sorter: alpha
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/NewDB
     username: postgres
-    password: A!ciRche@postG
+    password: MST
+    
 
   main:
     allow-bean-definition-overriding: true
