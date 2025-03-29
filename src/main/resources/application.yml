@@ -97,3 +97,12 @@ file:
   upload-dir: "C:/lms/uploads"  # Absolute path for local filesystem
   storage:
     location: uploads  # This seems redundant; consider removing if not used elsewhere
+
+    springdoc:  
+  api-docs:  
+    path: /v3/api-docs  
+  swagger-ui:  
+    path: /swagger-ui.html  
+    operations-sorter: method  
+    tags-sorter: alpha 
+    
