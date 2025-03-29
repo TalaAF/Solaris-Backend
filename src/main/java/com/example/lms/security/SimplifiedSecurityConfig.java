@@ -122,11 +122,8 @@ public class SimplifiedSecurityConfig {
             // Set permissions on endpoints
             .authorizeHttpRequests(auth -> auth
                 // Public endpoints
-                .requestMatchers("/api/auth/**", "/oauth2/**").permitAll()
-                .requestMatchers("/oauth2/success").permitAll() 
-                .requestMatchers("/api/public/**").permitAll()
-                .requestMatchers("/api/health/**").permitAll()
-                .requestMatchers("/api/swagger-ui/**", "/api/v3/api-docs/**").permitAll()
+                .requestMatchers("/api/auth/**", "/oauth2/**", "/api/public/**", 
+                     "/api/health/**", "/api/swagger-ui/**", "/api/v3/api-docs/**").permitAll()
                 // Admin endpoints
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 // All other endpoints need authentication
@@ -135,7 +132,7 @@ public class SimplifiedSecurityConfig {
             
             // Add JWT filter and dynamic permission filter
             .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
-            .addFilterAfter(dynamicPermissionFilter, JwtAuthenticationFilter.class)
+            //.addFilterAfter(dynamicPermissionFilter, JwtAuthenticationFilter.class)
             
             // For H2 console, if needed in development (disable in production)
             .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable()))

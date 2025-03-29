@@ -49,12 +49,8 @@ public class DynamicPermissionFilter extends OncePerRequestFilter {
                     return;
                 }
             } 
-            // Check dynamic permission for all other endpoints
-            else if (!securityEndpointService.checkPermission(authentication, method, path)) {
-                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                response.getWriter().write("Access denied: Insufficient permissions");
-                return;
-            }
+            //I removed the dynamic permission check here to avoid overriding @PreAuthorize
+            
         }
         
         chain.doFilter(request, response);
