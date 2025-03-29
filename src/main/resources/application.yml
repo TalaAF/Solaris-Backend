@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/NewDB
+    url: jdbc:postgresql://localhost:5432/TestDB
     username: postgres
     password: A!ciRche@postG
 
@@ -57,7 +57,9 @@ logging:
     org.springframework: INFO
     com.example.lms: DEBUG
     org.hibernate.SQL: DEBUG
+    #org.hibernate.type.descriptor.sql.BasicBinder: TRACE
     io.jsonwebtoken: DEBUG
+    
 
 # JWT Configuration
 app:
