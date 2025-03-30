@@ -27,7 +27,7 @@ public class NotificationPreferenceService {
     /**
      * Get all preferences for a user
      */
-    @Transactional(readOnly = true)
+    @Transactional
     public List<NotificationPreference> getPreferences(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));

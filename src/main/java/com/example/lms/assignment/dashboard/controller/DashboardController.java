@@ -29,7 +29,7 @@ public class DashboardController {
     private DashboardMapper dashboardMapper;
 
     @GetMapping("/student/{studentId}")
-    @PreAuthorize("hasRole('STUDENT')")
+    @PreAuthorize("hasRole('ROLE_STUDENT') or hasRole('ROLE_ADMIN')")
     @Operation(summary = "Get student dashboard", description = "Retrieves the dashboard for a specific student, including upcoming assignment deadlines and recent forum activity")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Dashboard retrieved successfully"),

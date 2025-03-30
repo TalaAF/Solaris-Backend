@@ -34,7 +34,7 @@ public class ForumController {
 
     // Method-level annotations
     @PostMapping("/threads")
-    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'STUDENT')")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'STUDENT', 'ADMIN')")
     @Operation(summary = "Create a new forum thread", description = "Creates a new discussion thread for a course")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Thread created successfully"),
@@ -49,7 +49,7 @@ public class ForumController {
 
     // Method-level annotations
     @PostMapping("/posts")
-    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'STUDENT')")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'STUDENT','ADMIN')")
     @Operation(summary = "Create a new forum post", description = "Creates a new post in an existing thread")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Post created successfully"),
@@ -64,7 +64,7 @@ public class ForumController {
 
     // Method-level annotations
     @GetMapping("/{courseId}/threads")
-    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'STUDENT')")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'STUDENT','ADMIN')")
     @Operation(summary = "Get threads for a course", description = "Retrieves all threads for a specific course")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Threads retrieved successfully"),
@@ -79,7 +79,7 @@ public class ForumController {
 
     // Method-level annotations
     @GetMapping("/threads/{threadId}/posts")
-    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'STUDENT')")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'STUDENT','ADMIN')")
     @Operation(summary = "Get posts for a thread", description = "Retrieves all posts in a specific thread")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Posts retrieved successfully"),
