@@ -91,33 +91,44 @@ public class CourseService {
      * @throws IllegalArgumentException if validation fails
      */
     @Transactional
-    @CacheEvict(value = "courses", allEntries = true)
-    public CourseDTO createCourse(CourseDTO courseDTO) {
-        // Validate the fields of courseDTO
-        validateCourseDTO(courseDTO);
+@CacheEvict(value = "courses", allEntries = true)
+public CourseDTO createCourse(CourseDTO courseDTO) {
+    // Validate the fields of courseDTO
+    validateCourseDTO(courseDTO);
 
-        // Find the instructor by email
-        User instructor = userRepository.findByEmail(courseDTO.getInstructorEmail())
-                .orElseThrow(() -> new ResourceNotFoundException("Instructor not found with email: " + courseDTO.getInstructorEmail()));
+    // Find the instructor by email
+    User instructor = userRepository.findByEmail(courseDTO.getInstructorEmail())
+            .orElseThrow(() -> new ResourceNotFoundException("Instructor not found with email: " + courseDTO.getInstructorEmail()));
 
-        Department department = null;
-        if (courseDTO.getDepartmentId() != null) {
-            department = departmentRepository.findById(courseDTO.getDepartmentId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Department not found with id: " + courseDTO.getDepartmentId()));
-        }
-        
-        // Convert the DTO to entity
-        Course course = CourseMapper.toEntity(courseDTO, instructor, department);
-
-        // Save the course entity to the repository
-        Course savedCourse = courseRepository.save(course);
-        
-        // Log the activity
-        logService.logActivity(instructor, "COURSE_CREATED", "Created course: " + course.getTitle());
-
-        // Return the saved course as DTO
-        return CourseMapper.toDTO(savedCourse);
+    Department department = null;
+    if (courseDTO.getDepartmentId() != null) {
+        department = departmentRepository.findById(courseDTO.getDepartmentId())
+                .orElseThrow(() -> new ResourceNotFoundException("Department not found with id: " + courseDTO.getDepartmentId()));
     }
+    
+    // Convert the DTO to entity
+    Course course = CourseMapper.toEntity(courseDTO, instructor, department);
+
+    // Process prerequisites if provided
+    if (courseDTO.getPrerequisiteCourseIds() != null && !courseDTO.getPrerequisiteCourseIds().isEmpty()) {
+        Set<Course> prerequisites = new HashSet<>();
+        for (Long prerequisiteId : courseDTO.getPrerequisiteCourseIds()) {
+            Course prerequisite = courseRepository.findById(prerequisiteId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Prerequisite course not found with id: " + prerequisiteId));
+            prerequisites.add(prerequisite);
+        }
+        course.setPrerequisites(prerequisites);
+    }
+
+    // Save the course entity to the repository
+    Course savedCourse = courseRepository.save(course);
+    
+    // Log the activity
+    logService.logActivity(instructor, "COURSE_CREATED", "Created course: " + course.getTitle());
+
+    // Return the saved course as DTO
+    return CourseMapper.toDTO(savedCourse);
+}
 
     /**
      * Update an existing course
@@ -182,30 +193,29 @@ public class CourseService {
      * @param id Course ID
      * @throws ResourceNotFoundException if course not found
      */
+    /**
+     * Soft delete a course by marking it as archived and unpublished
+     *
+     * @param id Course ID
+     * @throws ResourceNotFoundException if course not found
+     */
     @Transactional
     @CacheEvict(value = "courses", allEntries = true)
     public void deleteCourse(Long id) {
         Course course = courseRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found with id: " + id));
-        
-        // Check if the course has enrollments, content, or quizzes
-        if (!course.getStudents().isEmpty()) {
-            throw new IllegalStateException("Cannot delete course with active enrollments. Please unenroll students first.");
-        }
-        
-        if (!course.getContents().isEmpty()) {
-            throw new IllegalStateException("Cannot delete course with content. Please delete content first.");
-        }
-        
-        if (!course.getQuizzes().isEmpty()) {
-            throw new IllegalStateException("Cannot delete course with quizzes. Please delete quizzes first.");
-        }
-        
+
+        // Instead of checking for constraints and throwing exceptions,
+        // simply mark the course as archived and unpublished
+        course.setArchived(true);
+        course.setPublished(false);
+
         // Log the activity
         User admin = course.getInstructor(); // Using instructor for logging as admin is not readily available
-        logService.logActivity(admin, "COURSE_DELETED", "Deleted course: " + course.getTitle());
-        
-        courseRepository.deleteById(id);
+        logService.logActivity(admin, "COURSE_ARCHIVED", "Archived course: " + course.getTitle());
+
+        // Save the updated course
+        courseRepository.save(course);
     }
 
     /**

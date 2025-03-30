@@ -97,21 +97,17 @@ public class DepartmentServiceImpl implements DepartmentService {
         department = departmentRepository.save(department);
         return mapToResponseDTO(department);
     }
-    
+
     @Override
     @Transactional
     public void deleteDepartment(Long id) {
         Department department = departmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Department not found with id: " + id));
-        
-        // Check if department has associated users before deletion
-        if (!department.getUsers().isEmpty()) {
-            // Soft delete by setting isActive to false
-            department.setActive(false);
-            departmentRepository.save(department);
-        } else {
-            departmentRepository.delete(department);
-        }
+
+        // Always perform soft delete by setting isActive to false
+        // regardless of whether there are associated users/enrollments
+        department.setActive(false);
+        departmentRepository.save(department);
     }
     
     // Utility method to map Department entity to ResponseDTO

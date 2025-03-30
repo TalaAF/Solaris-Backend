@@ -74,8 +74,8 @@ public class Course extends BaseEntity {
     private LocalDateTime endDate;
     
     // Course status
-    private boolean published = false;
-    private boolean archived = false;
+    private boolean published = true;
+    private boolean archived = true;
     
     // Course settings
     private boolean enrollmentEnabled = true;

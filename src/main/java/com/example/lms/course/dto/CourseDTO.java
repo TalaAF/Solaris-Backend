@@ -50,8 +50,8 @@ public class CourseDTO extends RepresentationModel<CourseDTO> {
     private Set<Long> prerequisiteCourseIds = new HashSet<>();
     
     // Status flags
-    private boolean isPublished = false;
-    private boolean isArchived = false;
+    private boolean isPublished = true;
+    private boolean isArchived = true;
     
     // Dates
     private LocalDateTime startDate;

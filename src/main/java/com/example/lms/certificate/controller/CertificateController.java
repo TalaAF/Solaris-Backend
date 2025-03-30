@@ -167,6 +167,7 @@ public class CertificateController {
         @ApiResponse(responseCode = "404", description = "Certificate not found"),
         @ApiResponse(responseCode = "500", description = "Error generating PDF")
     })
+    @PreAuthorize("hasRole('STUDENT') or hasRole('INSTRUCTOR') or hasRole('ADMIN')")
     public ResponseEntity<byte[]> downloadCertificate(
             @Parameter(description = "ID of the certificate") @PathVariable Long certificateId) {
         try {
