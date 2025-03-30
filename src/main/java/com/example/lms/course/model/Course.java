@@ -75,7 +75,7 @@ public class Course extends BaseEntity {
     
     // Course status
     private boolean published = true;
-    private boolean archived = true;
+    private boolean archived = false;
     
     // Course settings
     private boolean enrollmentEnabled = true;

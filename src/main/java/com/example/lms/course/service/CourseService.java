@@ -15,7 +15,8 @@ import com.example.lms.enrollment.service.EnrollmentService;
 import com.example.lms.content.service.ContentService;
 import com.example.lms.progress.service.ProgressService;
 import com.example.lms.assessment.repository.QuizRepository;
-
+import java.util.Set;
+import java.util.HashSet;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;

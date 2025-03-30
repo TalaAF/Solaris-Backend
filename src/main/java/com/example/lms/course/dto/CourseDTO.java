@@ -51,7 +51,7 @@ public class CourseDTO extends RepresentationModel<CourseDTO> {
     
     // Status flags
     private boolean isPublished = true;
-    private boolean isArchived = true;
+    private boolean isArchived = false;
     
     // Dates
     private LocalDateTime startDate;
