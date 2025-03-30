@@ -62,6 +62,7 @@ public class CourseController {
         @ApiResponse(responseCode = "403", description = "Forbidden, insufficient permissions"),
         @ApiResponse(responseCode = "404", description = "Instructor or department not found")
     })
+
     public ResponseEntity<EntityModel<CourseDTO>> createCourse(
             @Parameter(description = "Course details", required = true)
             @Validated @RequestBody CourseDTO courseDTO) {
@@ -91,6 +92,7 @@ public class CourseController {
         ),
         @ApiResponse(responseCode = "404", description = "Course not found")
     })
+    @PreAuthorize("hasRole('ADMIN') or hasRole('INSTRUCTOR') or hasRole('STUDENT')")
     public ResponseEntity<EntityModel<CourseDTO>> getCourseById(
             @Parameter(description = "Course ID", required = true)
             @PathVariable Long id) {
@@ -118,6 +120,7 @@ public class CourseController {
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = CourseDTO.class))
         )
     })
+    @PreAuthorize("hasRole('ADMIN') or hasRole('INSTRUCTOR') or hasRole('STUDENT')")
     public ResponseEntity<CollectionModel<EntityModel<CourseDTO>>> getAllCourses() {
         List<EntityModel<CourseDTO>> courses = courseService.getAllCourses().stream()
                 .map(courseDTO -> {
@@ -155,6 +158,7 @@ public class CourseController {
         ),
         @ApiResponse(responseCode = "404", description = "Department not found")
     })
+    @PreAuthorize("hasRole('ADMIN') or hasRole('INSTRUCTOR') or hasRole('STUDENT')")
     public ResponseEntity<CollectionModel<EntityModel<CourseDTO>>> getCoursesByDepartment(
             @Parameter(description = "Department ID", required = true)
             @PathVariable Long departmentId) {
@@ -194,6 +198,7 @@ public class CourseController {
         ),
         @ApiResponse(responseCode = "404", description = "Instructor not found")
     })
+    @PreAuthorize("hasRole('ADMIN') or hasRole('INSTRUCTOR') or hasRole('STUDENT')")
     public ResponseEntity<CollectionModel<EntityModel<CourseDTO>>> getCoursesByInstructor(
             @Parameter(description = "Instructor ID", required = true)
             @PathVariable Long instructorId) {

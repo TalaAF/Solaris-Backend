@@ -45,6 +45,7 @@ public class CompletionRequirementController {
         @ApiResponse(responseCode = "404", description = "Course not found"),
         @ApiResponse(responseCode = "500", description = "Internal server error")
     })
+    @PreAuthorize("hasRole('ADMIN') or hasRole('INSTRUCTOR') or (hasRole('STUDENT') and #courseId == authentication.principal.course.id)")
     public ResponseEntity<List<CompletionRequirementDTO>> getCompletionRequirements(
             @Parameter(description = "ID of the course to retrieve completion requirements for", required = true)
             @PathVariable Long courseId) {
@@ -71,6 +72,7 @@ public class CompletionRequirementController {
         @ApiResponse(responseCode = "404", description = "Course not found"),
         @ApiResponse(responseCode = "500", description = "Internal server error")
     })
+    @PreAuthorize("hasRole('ADMIN') or hasRole('INSTRUCTOR')")
     public ResponseEntity<CompletionRequirementDTO> createCompletionRequirement(
             @Parameter(description = "ID of the course to create completion requirement for", required = true)
             @PathVariable Long courseId,

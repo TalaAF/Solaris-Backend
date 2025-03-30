@@ -53,6 +53,7 @@ public class CertificateController {
         @ApiResponse(responseCode = "404", description = "Student or course not found"),
         @ApiResponse(responseCode = "403", description = "Unauthorized access or course not completed")
     })
+    @PreAuthorize("hasRole('STUDENT') or hasRole('INSTRUCTOR') or hasRole('ADMIN')")
     public ResponseEntity<CertificateDTO> generateCertificate(
             @Parameter(description = "ID of the student") @PathVariable Long studentId,
             @Parameter(description = "ID of the course") @PathVariable Long courseId) {
@@ -73,6 +74,7 @@ public class CertificateController {
                      content = @Content(schema = @Schema(implementation = CertificateDTO.class))),
         @ApiResponse(responseCode = "404", description = "Certificate not found")
     })
+    @PreAuthorize("hasRole('INSTRUCTOR') or hasRole('ADMIN')")
     public ResponseEntity<CertificateDTO> getCertificateById(
             @Parameter(description = "ID of the certificate") @PathVariable Long certificateId) {
         Certificate certificate = certificateService.getCertificateById(certificateId);
@@ -91,6 +93,7 @@ public class CertificateController {
         @ApiResponse(responseCode = "200", description = "List of certificates"),
         @ApiResponse(responseCode = "404", description = "Student not found")
     })
+    @PreAuthorize("hasRole('INSTRUCTOR') or hasRole('ADMIN')")
     public ResponseEntity<List<CertificateDTO>> getCertificatesByStudent(
             @Parameter(description = "ID of the student") @PathVariable Long studentId) {
         List<Certificate> certificates = certificateService.getCertificatesByStudent(studentId);
@@ -112,6 +115,7 @@ public class CertificateController {
         @ApiResponse(responseCode = "200", description = "List of certificates"),
         @ApiResponse(responseCode = "404", description = "Course not found")
     })
+    @PreAuthorize("hasRole('INSTRUCTOR') or hasRole('ADMIN')")
     public ResponseEntity<List<CertificateDTO>> getCertificatesByCourse(
             @Parameter(description = "ID of the course") @PathVariable Long courseId) {
         List<Certificate> certificates = certificateService.getCertificatesByCourse(courseId);
@@ -130,6 +134,7 @@ public class CertificateController {
         description = "Retrieves all certificates in the system"
     )
     @ApiResponse(responseCode = "200", description = "List of all certificates")
+    @PreAuthorize("hasRole('INSTRUCTOR') or hasRole('ADMIN')")
     public ResponseEntity<List<CertificateDTO>> getAllCertificates() {
         List<Certificate> certificates = certificateService.getAllCertificates();
         List<CertificateDTO> certificateDTOs = certificates.stream()
@@ -147,6 +152,7 @@ public class CertificateController {
         description = "Verifies the authenticity of a certificate using its verification ID"
     )
     @ApiResponse(responseCode = "200", description = "Certificate verification result")
+    @PreAuthorize("hasRole('STUDENT') or hasRole('INSTRUCTOR') or hasRole('ADMIN')")
     public ResponseEntity<Boolean> verifyCertificate(
             @Parameter(description = "Verification ID of the certificate") @PathVariable String verificationId) {
         boolean isValid = certificateService.verifyCertificate(verificationId);
