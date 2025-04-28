@@ -10,6 +10,7 @@ import com.example.lms.content.dto.ContentDTO;
 import com.example.lms.content.dto.ModuleDTO;
 import com.example.lms.content.model.Content;
 import com.example.lms.content.model.Module;
+import com.example.lms.content.model.ModuleStatus;
 import com.example.lms.content.service.ContentService;
 
 /**

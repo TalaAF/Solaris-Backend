@@ -89,11 +89,3 @@ public class Module {
     }
 }
 
-/**
- * Enum representing the status of a module
- */
-enum ModuleStatus {
-    DRAFT,
-    PUBLISHED,
-    ARCHIVED
-}

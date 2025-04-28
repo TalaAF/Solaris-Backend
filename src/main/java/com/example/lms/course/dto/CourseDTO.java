@@ -14,6 +14,10 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
+
+// Add import for ModuleDTO
+import com.example.lms.content.dto.ModuleDTO;
 
 /**
  * Data Transfer Object for Course entities.
@@ -23,6 +27,8 @@ import lombok.AllArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+// Add callSuper=false to fix the equals/hashCode issue with RepresentationModel
+@EqualsAndHashCode(callSuper = false)
 public class CourseDTO extends RepresentationModel<CourseDTO> {
     // Basic fields
     private Long id;

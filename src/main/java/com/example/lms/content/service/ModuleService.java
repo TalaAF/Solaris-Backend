@@ -4,6 +4,7 @@ import com.example.lms.content.dto.ModuleDTO;
 import com.example.lms.content.dto.ModuleOrderRequest;
 import com.example.lms.content.mapper.ModuleMapper;
 import com.example.lms.content.model.Module;
+import com.example.lms.content.model.ModuleStatus;
 import com.example.lms.content.repository.ContentRepository;
 import com.example.lms.content.repository.ModuleRepository;
 import com.example.lms.course.model.Course;
