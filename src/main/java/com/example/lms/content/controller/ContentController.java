@@ -204,4 +204,23 @@ public class ContentController {
             @RequestParam(required = false) String fileType) {
         return contentService.filterContents(tags, fileType);
     }
+
+    @PostMapping("/{contentId}/mark-viewed")
+    @Operation(summary = "Mark content as viewed", description = "Marks content as viewed by a user")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Content marked as viewed"),
+        @ApiResponse(responseCode = "404", description = "Content not found")
+    })
+    public ResponseEntity<?> markContentAsViewed(
+            @PathVariable Long contentId,
+            @RequestBody Map<String, Long> requestBody) {
+        
+        Long userId = requestBody.get("userId");
+        if (userId == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "userId is required"));
+        }
+        
+        contentService.logContentAccess(contentId, userId);
+        return ResponseEntity.ok(Map.of("success", true));
+    }
 }

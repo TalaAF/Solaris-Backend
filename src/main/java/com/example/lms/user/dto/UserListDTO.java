@@ -20,4 +20,12 @@ public class UserListDTO {
     private Long departmentId;
     private String departmentName;
     private LocalDateTime createdAt;
+    
+    /**
+     * Gets the name as expected by frontend.
+     * @return The user's full name
+     */
+    public String getName() {
+        return this.fullName;
+    }
 }

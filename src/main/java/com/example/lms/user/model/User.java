@@ -17,6 +17,7 @@ import lombok.NoArgsConstructor;
 import lombok.EqualsAndHashCode;
 import java.util.*;
 import com.example.lms.security.model.Role;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Data // Lombok: Generates getters, setters, toString, equals, and hashCode
 @EqualsAndHashCode(callSuper = true) // Lombok: Generates equals and hashCode with a call to superclass
@@ -31,6 +32,7 @@ public class User extends BaseEntity {
     @Column(nullable = false, unique = true)
     private String email; // User's email address (used for login)
 
+    @JsonIgnore // Don't expose password in JSON responses
     @Column(nullable = false)
     private String password; // Encrypted password
 
@@ -41,14 +43,17 @@ public class User extends BaseEntity {
     @JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
     private Set<Role> roles = new HashSet<>();
 
+    @JsonIgnore // Don't expose quiz attempts in user JSON
     @OneToMany(mappedBy = "student")
     private List<QuizAttempt> quizAttempts = new ArrayList<>();
 
+    @JsonIgnore // Don't expose enrollments in user JSON
     @OneToMany(mappedBy = "student")
     private Set<Enrollment> enrollments = new HashSet<>();
 
     // In User.java
     @Column
+    @JsonIgnore // Don't expose token version in JSON
     private Long tokenVersion = 0L;
 
     public void incrementTokenVersion() {
@@ -73,5 +78,25 @@ public class User extends BaseEntity {
      */
     public boolean checkPassword(String rawPassword, PasswordEncoder passwordEncoder) {
         return passwordEncoder.matches(rawPassword, this.password);
+    }
+    
+    /**
+     * Gets the user's name as expected by frontend.
+     * This method helps with API compatibility.
+     * 
+     * @return The user's full name
+     */
+    public String getName() {
+        return this.fullName;
+    }
+    
+    /**
+     * Gets the user's profile image as expected by frontend.
+     * This method helps with API compatibility.
+     * 
+     * @return The user's profile picture URL
+     */
+    public String getProfileImage() {
+        return this.profilePicture;
     }
 }

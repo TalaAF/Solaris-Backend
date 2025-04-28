@@ -2,6 +2,7 @@ package com.example.lms.course.dto;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.springframework.hateoas.RepresentationModel;
@@ -64,6 +65,13 @@ public class CourseDTO extends RepresentationModel<CourseDTO> {
     private Integer quizCount;
     private Double averageRating;
     private Integer enrollmentCount;
+    
+    // Added fields for frontend compatibility
+    private String code; // Course code
+    private Long instructorId; // Instructor ID
+    private String instructorName; // Instructor name
+    private Integer progress = 0; // Student progress in course (default 0)
+    private List<ModuleDTO> modules; // List of modules in the course
     
     /**
      * Minimal constructor with essential fields

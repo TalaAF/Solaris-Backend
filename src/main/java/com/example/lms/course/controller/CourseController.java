@@ -28,7 +28,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
  * REST API controller for course management
  */
 @RestController
-@RequestMapping("/api/courses")
+@RequestMapping("/api/courses") // Change from "/api/v1/courses" to "/api/courses"
 @Tag(name = "Course Management", description = "APIs for managing courses in the LMS")
 @SecurityRequirement(name = "bearerAuth")
 public class CourseController {
@@ -370,6 +370,47 @@ public class CourseController {
             @PathVariable Long id) {
         CourseStatisticsDTO statistics = courseService.getCourseStatistics(id);
         return ResponseEntity.ok(statistics);
+    }
+    
+    /**
+     * Get all courses with user progress
+     */
+    @GetMapping("/user/{userId}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('INSTRUCTOR') or #userId == authentication.principal.id")
+    @Operation(summary = "Get all courses with user progress", description = "Get all courses with progress for a specific user")
+    public ResponseEntity<CollectionModel<EntityModel<CourseDTO>>> getCoursesForUser(
+            @PathVariable Long userId) {
+        
+        List<EntityModel<CourseDTO>> courses = courseService.getCoursesWithProgress(userId).stream()
+                .map(courseDTO -> {
+                    EntityModel<CourseDTO> resource = EntityModel.of(courseDTO);
+                    addLinks(resource, courseDTO.getId());
+                    return resource;
+                })
+                .collect(Collectors.toList());
+                
+        CollectionModel<EntityModel<CourseDTO>> resources = CollectionModel.of(
+            courses,
+            linkTo(methodOn(CourseController.class).getCoursesForUser(userId)).withSelfRel()
+        );
+        
+        return ResponseEntity.ok(resources);
+    }
+    
+    /**
+     * Get course by ID with user progress
+     */
+    @GetMapping("/{id}/user/{userId}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('INSTRUCTOR') or #userId == authentication.principal.id")
+    @Operation(summary = "Get course with user progress", description = "Get course details with progress for a specific user")
+    public ResponseEntity<EntityModel<CourseDTO>> getCourseWithUserProgress(
+            @PathVariable Long id,
+            @PathVariable Long userId) {
+        
+        CourseDTO courseDTO = courseService.getCourseWithProgress(id, userId);
+        EntityModel<CourseDTO> resource = EntityModel.of(courseDTO);
+        addLinks(resource, id);
+        return ResponseEntity.ok(resource);
     }
     
     /**

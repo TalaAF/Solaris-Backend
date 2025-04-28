@@ -129,4 +129,17 @@ public class UserController {
         userService.activateUser(id);
         return ResponseEntity.ok().build();
     }
+    
+    @GetMapping("/profile")
+    @Operation(summary = "Get current user profile", 
+               description = "Returns the profile of the currently authenticated user.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Profile retrieved successfully",
+                    content = @Content(schema = @Schema(implementation = UserDTO.class))),
+        @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    public ResponseEntity<UserDTO> getCurrentUserProfile(@AuthenticationPrincipal UserDetails currentUser) {
+        String email = currentUser.getUsername();
+        return ResponseEntity.ok(userService.getUserByEmail(email));
+    }
 }

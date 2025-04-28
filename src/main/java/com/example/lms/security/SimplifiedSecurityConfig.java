@@ -19,6 +19,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import com.example.lms.security.oauth.OAuth2AuthenticationSuccessHandler;
@@ -91,15 +92,15 @@ public class SimplifiedSecurityConfig {
      @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000", "https://yourdomain.com")); // Add your frontend URLs
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000", "https://yourdomain.com")); // Frontend URLs
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept"));
         configuration.setExposedHeaders(Arrays.asList("Authorization"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L); // 1 hour
         
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
+        source.registerCorsConfiguration("/api/**", configuration); // Focus on /api endpoints
         return source;
     }
 
@@ -121,21 +122,23 @@ public class SimplifiedSecurityConfig {
             
             // Set permissions on endpoints
             .authorizeHttpRequests(auth -> auth
-                // Public endpoints
+                // Public endpoints - add specifically needed frontend endpoints
                 .requestMatchers("/api/auth/**", "/oauth2/**", "/api/public/**", 
                      "/api/health/**", "/api/swagger-ui.html","/api/swagger-ui/**", 
                  "/api/v3/api-docs", "/api/v3/api-docs/**").permitAll()
+                // Allow OPTIONS requests for CORS preflight
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 // Admin endpoints
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 // All other endpoints need authentication
                 .anyRequest().authenticated()
             )
             
-            // Add JWT filter and dynamic permission filter
+            // JWT and permission filters
             .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
             //.addFilterAfter(dynamicPermissionFilter, JwtAuthenticationFilter.class)
             
-            // For H2 console, if needed in development (disable in production)
+            // For H2 console, if needed in development
             .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable()))
             
             // OAuth2 configuration

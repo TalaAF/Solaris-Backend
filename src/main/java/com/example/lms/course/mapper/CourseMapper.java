@@ -71,9 +71,14 @@ public static CourseDTO toDTO(Course course) {
     courseDTO.setTitle(course.getTitle());
     courseDTO.setDescription(course.getDescription());
     
-    // Set instructor email if available
+    // Add code field
+    courseDTO.setCode(course.getCode());
+    
+    // Set instructor information
     if (course.getInstructor() != null) {
         courseDTO.setInstructorEmail(course.getInstructor().getEmail());
+        courseDTO.setInstructorId(course.getInstructor().getId());
+        courseDTO.setInstructorName(course.getInstructor().getFullName());
     }
 
     // Add department info if available
@@ -82,10 +87,8 @@ public static CourseDTO toDTO(Course course) {
         courseDTO.setDepartmentName(course.getDepartment().getName());
     }
 
-    // Add max capacity to the DTO
+    // Add max capacity and enrollment count
     courseDTO.setMaxCapacity(course.getMaxCapacity());
-    
-    // Add current enrollment count
     courseDTO.setCurrentEnrollment(course.getCurrentEnrollment());
 
     // Set the prerequisite course IDs
@@ -104,7 +107,7 @@ public static CourseDTO toDTO(Course course) {
     courseDTO.setPublished(course.isPublished());
     courseDTO.setArchived(course.isArchived());
     
-    // Add metadata fields (if BaseEntity extends to Course)
+    // Add metadata fields
     if (course.getCreatedAt() != null) {
         courseDTO.setCreatedAt(course.getCreatedAt());
     }
@@ -112,6 +115,10 @@ public static CourseDTO toDTO(Course course) {
     if (course.getUpdatedAt() != null) {
         courseDTO.setUpdatedAt(course.getUpdatedAt());
     }
+    
+    // Set content and quiz counts
+    courseDTO.setContentCount(course.getContents() != null ? course.getContents().size() : 0);
+    courseDTO.setQuizCount(course.getQuizzes() != null ? course.getQuizzes().size() : 0);
 
     return courseDTO;
 }

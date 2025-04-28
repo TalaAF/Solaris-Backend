@@ -36,6 +36,9 @@ public class Course extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Column(unique = true)
+private String code; 
+
     @ManyToOne
     @JoinColumn(name = "department_id")
     private Department department;

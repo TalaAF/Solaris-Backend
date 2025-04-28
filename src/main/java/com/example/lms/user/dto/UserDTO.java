@@ -1,6 +1,5 @@
 package com.example.lms.user.dto;
 
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -28,14 +27,30 @@ import java.util.Set;
 public class UserDTO {
     private Long id;
     private String email;
+    // Keep fullName internally but add name getter for frontend compatibility
     private String fullName;
     private Long departmentId;
     private String departmentName;
     private Set<String> roleNames;
+    // Keep profilePicture internally but add profileImage getter for frontend compatibility
     private String profilePicture;
     private boolean isActive;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     
+    /**
+     * Gets the name as expected by frontend.
+     * @return The user's full name
+     */
+    public String getName() {
+        return this.fullName;
+    }
     
+    /**
+     * Gets the profile image as expected by frontend.
+     * @return The user's profile picture URL
+     */
+    public String getProfileImage() {
+        return this.profilePicture;
+    }
 }

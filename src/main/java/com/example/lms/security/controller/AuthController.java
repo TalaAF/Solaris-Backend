@@ -33,9 +33,10 @@ import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
-
 
 @RestController
 @RequestMapping("/api/auth")
@@ -56,6 +57,7 @@ public class AuthController {
     private final JwtTokenProvider tokenProvider;
     private final UserRepository userRepository;
     private final TokenStoreService tokenStoreService;
+    
     @PostMapping("/login")
     @Operation(summary = "User login", description = "Authenticate user and return JWT token")
     @ApiResponses(value = {
@@ -94,6 +96,31 @@ public class AuthController {
         }
     }
     
+    @GetMapping("/me")
+    @Operation(summary = "Get current user info", description = "Returns information about the currently logged in user")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "User information retrieved successfully",
+                content = @Content(schema = @Schema(implementation = AuthResponse.UserInfo.class))),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "404", description = "User not found")
+    })
+    public ResponseEntity<AuthResponse.UserInfo> getCurrentUser(@AuthenticationPrincipal UserDetails userDetails) {
+        String email = userDetails.getUsername();
+        User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        // Create a UserInfo object using our nested class from AuthResponse
+        AuthResponse.UserInfo userInfo = new AuthResponse.UserInfo(
+            user.getId(),
+            user.getFullName(), // This will appear as "name" in the response
+            user.getEmail(),
+            user.getRoles(),
+            user.getProfilePicture() // This will appear as "profileImage" in the response
+        );
+        
+        return ResponseEntity.ok(userInfo);
+    }
+
     @PostMapping("/refresh-token")
     @Operation(summary = "Refresh JWT token", description = "Refresh the access token using the refresh token")
     @ApiResponses(value = {

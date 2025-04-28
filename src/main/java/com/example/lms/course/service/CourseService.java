@@ -365,6 +365,56 @@ public CourseDTO createCourse(CourseDTO courseDTO) {
         return stats;
     }
     
+    /**
+ * Get course with user-specific progress
+ * 
+ * @param courseId Course ID
+ * @param userId User ID
+ * @return Course DTO with user's progress
+ * @throws ResourceNotFoundException if course not found
+ */
+@Transactional(readOnly = true)
+public CourseDTO getCourseWithProgress(Long courseId, Long userId) {
+    Course course = courseRepository.findById(courseId)
+            .orElseThrow(() -> new ResourceNotFoundException("Course not found with id: " + courseId));
+            
+    CourseDTO courseDTO = CourseMapper.toDTO(course);
+    
+    // Get user's progress if userId provided
+    if (userId != null) {
+        Double progress = progressService.getProgressPercentage(userId, courseId);
+        if (progress != null) {
+            courseDTO.setProgress(progress.intValue());
+        }
+    }
+    
+    return courseDTO;
+}
+
+/**
+ * Get all courses with progress for a specific user
+ * 
+ * @param userId User ID
+ * @return List of course DTOs with user's progress in each
+ */
+@Transactional(readOnly = true) 
+public List<CourseDTO> getCoursesWithProgress(Long userId) {
+    List<Course> courses = courseRepository.findAll();
+    return courses.stream()
+            .map(course -> {
+                CourseDTO dto = CourseMapper.toDTO(course);
+                
+                // Get progress for this specific user and course
+                Double progress = progressService.getProgressPercentage(userId, course.getId());
+                if (progress != null) {
+                    dto.setProgress(progress.intValue());
+                }
+                
+                return dto;
+            })
+            .collect(Collectors.toList());
+}
+    
     // Private methods
     
     /**
