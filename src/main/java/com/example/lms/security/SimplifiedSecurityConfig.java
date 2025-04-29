@@ -123,9 +123,9 @@ public class SimplifiedSecurityConfig {
             // Set permissions on endpoints
             .authorizeHttpRequests(auth -> auth
                 // Public endpoints - add specifically needed frontend endpoints
-                .requestMatchers("/api/auth/**", "/oauth2/**", "/api/public/**", 
-                     "/api/health/**", "/api/swagger-ui.html","/api/swagger-ui/**", 
-                 "/api/v3/api-docs", "/api/v3/api-docs/**").permitAll()
+                .requestMatchers("/api/auth/**", "/oauth2/**", "/login/oauth2/code/*", 
+                     "/api/public/**", "/api/health/**", "/api/swagger-ui.html",
+                     "/api/swagger-ui/**", "/api/v3/api-docs", "/api/v3/api-docs/**").permitAll()
                 // Allow OPTIONS requests for CORS preflight
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 // Admin endpoints
@@ -141,15 +141,22 @@ public class SimplifiedSecurityConfig {
             // For H2 console, if needed in development
             .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable()))
             
-            // OAuth2 configuration
+            // OAuth2 configuration - improved configuration with proper endpoints
             .oauth2Login(oauth2 -> oauth2
                 .authorizationEndpoint(endpoint -> 
-                    endpoint.baseUri("/oauth2/authorize"))
+                    endpoint.baseUri("/oauth2/authorization"))  // Changed from "/oauth2/authorize" to "/oauth2/authorization"
                 .redirectionEndpoint(endpoint -> 
                     endpoint.baseUri("/login/oauth2/code/*"))
                 .userInfoEndpoint(endpoint -> 
                     endpoint.userService(customOAuth2UserService))
                 .successHandler(oAuth2AuthenticationSuccessHandler)
+                .failureHandler((request, response, exception) -> {
+                    // Custom failure handler
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.setContentType("application/json");
+                    response.getWriter().write("{\"error\":\"Authentication failed: " + 
+                        exception.getMessage().replace("\"", "'") + "\"}");
+                })
             );
         
         return http.build();
