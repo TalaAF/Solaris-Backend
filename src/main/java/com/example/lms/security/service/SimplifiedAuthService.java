@@ -61,7 +61,7 @@ public class SimplifiedAuthService {
         // Generate JWT access token
         String jwt = tokenProvider.generateToken(authentication, request);
 
-        // Get user from repository
+        // Get user from repository with all relationships
         User user = userRepository.findByEmail(loginRequest.getEmail())
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
@@ -79,7 +79,20 @@ public class SimplifiedAuthService {
 
         log.info("User {} successfully logged in", user.getEmail());
 
-        return new AuthResponse(jwt, tokenId, user.getId(), user.getEmail(), roleNames);
+        // Construct auth response with complete role information
+        AuthResponse response = new AuthResponse();
+        response.setToken(jwt);
+        
+        AuthResponse.UserInfo userInfo = new AuthResponse.UserInfo();
+        userInfo.setId(user.getId());
+        userInfo.setEmail(user.getEmail());
+        userInfo.setName(user.getFullName());
+        userInfo.setProfileImage(user.getProfilePicture());
+        userInfo.setRoles(user.getRoles());  // Use the complete roles from the user entity
+        
+        response.setUser(userInfo);
+        
+        return response;
     }
 
     /**
@@ -142,16 +155,29 @@ public class SimplifiedAuthService {
         Claims claims = tokenProvider.parseToken(jwt);
         String tokenId = claims.get("tokenId", String.class);
         
-        // Join role names with comma for the response
-        String roleNames = savedUser.getRoles().stream()
-                .map(Role::getName)
-                .collect(Collectors.joining(","));
+        // Reload the user to ensure we have all relationships populated
+        User freshUser = userRepository.findById(savedUser.getId())
+                .orElseThrow(() -> new EntityNotFoundException("User not found after save"));
+        
+        // Pass the complete set of roles directly
+        Set<Role> completeRoles = freshUser.getRoles();
+        
+        log.info("User {} successfully registered", freshUser.getEmail());
 
-        log.info("User {} successfully registered", savedUser.getEmail());
-
-        // Return AuthResponse with full user information
-        return new AuthResponse(jwt, tokenId, savedUser.getId(), savedUser.getEmail(), 
-                              savedUser.getFullName(), roleNames, savedUser.getProfilePicture());
+        // Construct auth response with complete role information
+        AuthResponse response = new AuthResponse();
+        response.setToken(jwt);
+        
+        AuthResponse.UserInfo userInfo = new AuthResponse.UserInfo();
+        userInfo.setId(freshUser.getId());
+        userInfo.setEmail(freshUser.getEmail());
+        userInfo.setName(freshUser.getFullName());
+        userInfo.setProfileImage(freshUser.getProfilePicture());
+        userInfo.setRoles(completeRoles);
+        
+        response.setUser(userInfo);
+        
+        return response;
     }
 
     /**

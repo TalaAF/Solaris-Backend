@@ -7,6 +7,7 @@ import com.example.lms.security.service.PasswordService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.env.Environment;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,6 +18,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+import java.util.Arrays;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -26,6 +28,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 public class PasswordController {
     
     private final PasswordService passwordService;
+    private final Environment env;  // Add Environment dependency
     
     @PostMapping("/forgot-password")
     @Operation(summary = "Forgot Password", description = "Process forgot password request")
@@ -40,9 +43,19 @@ public class PasswordController {
         
         try {
             // For security reasons, we don't reveal if the email exists in our system
-            passwordService.processForgotPassword(request);
-            return ResponseEntity.ok(new MessageResponse(
-                "If the email exists in our system, a password reset link will be sent shortly"));
+            String resetToken = passwordService.processForgotPassword(request);
+            
+            MessageResponse response = new MessageResponse(
+                "If the email exists in our system, a password reset link will be sent shortly");
+            
+            // Only in development - add token to response
+            if (env.getActiveProfiles().length == 0 || 
+                Arrays.asList(env.getActiveProfiles()).contains("dev")) {
+                response.setDevToken(resetToken);
+                response.setDevResetUrl("/reset-password?token=" + resetToken);
+            }
+            
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Error processing forgot password request", e);
             // Still return a success message to avoid user enumeration
