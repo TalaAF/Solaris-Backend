@@ -139,8 +139,9 @@ public class SimplifiedAuthService {
         String jwt = tokenProvider.generateToken(authentication, request);
 
         // Get tokenId from generated JWT
-    Claims claims = tokenProvider.parseToken(jwt);
-    String tokenId = claims.get("tokenId", String.class);
+        Claims claims = tokenProvider.parseToken(jwt);
+        String tokenId = claims.get("tokenId", String.class);
+        
         // Join role names with comma for the response
         String roleNames = savedUser.getRoles().stream()
                 .map(Role::getName)
@@ -148,8 +149,9 @@ public class SimplifiedAuthService {
 
         log.info("User {} successfully registered", savedUser.getEmail());
 
-        // Return AuthResponse with tokens and user info
-        return new AuthResponse(jwt, tokenId, savedUser.getId(), savedUser.getEmail(), roleNames);
+        // Return AuthResponse with full user information
+        return new AuthResponse(jwt, tokenId, savedUser.getId(), savedUser.getEmail(), 
+                              savedUser.getFullName(), roleNames, savedUser.getProfilePicture());
     }
 
     /**

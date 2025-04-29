@@ -56,6 +56,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Healthcare LMS Database Initializer
@@ -72,6 +73,9 @@ public class DatabaseInitializer {
 
     @Value("${app.database.initialize:true}")
     private boolean initializeDatabase;
+
+   
+    
     @Bean
     public CommandLineRunner initDatabase(
             DepartmentRepository departmentRepository,
@@ -85,7 +89,9 @@ public class DatabaseInitializer {
             ModuleRepository moduleRepository,
             TagRepository tagRepository,
             ContentProgressRepository contentProgressRepository,
-            ProgressRepository progressRepository,
+            ProgressRepository progressRepository
+            // Comment out repositories you don't need right now
+            /*
             QuizRepository quizRepository,
             QuestionRepository questionRepository,
             AnswerOptionRepository answerOptionRepository,
@@ -99,13 +105,14 @@ public class DatabaseInitializer {
             NotificationRepository notificationRepository,
             NotificationPreferenceRepository notificationPreferenceRepository,
             CertificateRepository certificateRepository
+            */
     ) {
         return args -> {
             if (!initializeDatabase) {
                 log.info("Database initialization is disabled via configuration.");
                 return;
             }
-    
+
             try {
                 log.info("Loading Healthcare LMS database with test data...");
                 // Check if data already exists
@@ -113,7 +120,7 @@ public class DatabaseInitializer {
                     log.info("Database already contains data, skipping initialization.");
                     return;
                 }
-    
+
                 // Create departments with its own transaction
                 Map<String, Department> departments = initDepartments(departmentRepository);
                 
@@ -126,11 +133,11 @@ public class DatabaseInitializer {
                 // Create user profiles
                 initUserProfiles(userProfileRepository, users);
                 
-                // Create courses
-                Map<String, Course> courses = initCourses(courseRepository, users, departments);
+                // Create courses - using your standard method (not frontend aligned)
+                Map<String, Course> courses = initCourses(courseRepository, users, departments, userRepository, roles);
                 
-                // Create modules and tags
-                Map<String, Module> modules = initModules(moduleRepository);
+                // Create modules and tags - using your standard methods
+                Map<String, Module> modules = initModules(moduleRepository, courses);
                 Map<String, Tag> tags = initTags(tagRepository);
                 
                 // Create content
@@ -143,6 +150,8 @@ public class DatabaseInitializer {
                 initProgress(progressRepository, users, courses);
                 initContentProgress(contentProgressRepository, enrollments, contents);
                 
+                // Comment out everything you don't need for now
+                /*
                 // Create assessment items
                 Map<String, Quiz> quizzes = initQuizzes(quizRepository, courses);
                 Map<String, Question> questions = initQuestions(questionRepository, quizzes);
@@ -167,8 +176,9 @@ public class DatabaseInitializer {
                 
                 // Create certificates
                 initCertificates(certificateRepository, users, courses);
+                */
                 
-                log.info("Database initialized with healthcare LMS test data!");
+                log.info("Database initialized with healthcare LMS test data aligned with frontend!");
             } catch (Exception e) {
                 log.error("Failed to initialize database with test data", e);
                 e.printStackTrace();
@@ -179,16 +189,27 @@ public class DatabaseInitializer {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
 private void initProgress(ProgressRepository progressRepository, Map<String, User> users, Map<String, Course> courses) {
-    log.info("Creating progress data...");
+    log.info("Creating progress data aligned with frontend...");
     
     try {
-        // Track overall course progress
-        createProgress(progressRepository, users.get("smith"), courses.get("anatomy"), 100.0, LocalDateTime.now().minusDays(15));
-        createProgress(progressRepository, users.get("smith"), courses.get("cardiology"), 65.0, LocalDateTime.now().minusDays(2));
-        createProgress(progressRepository, users.get("brown"), courses.get("anatomy"), 100.0, LocalDateTime.now().minusDays(16));
-        createProgress(progressRepository, users.get("brown"), courses.get("surgicalTech"), 78.0, LocalDateTime.now().minusDays(3));
-        createProgress(progressRepository, users.get("patel"), courses.get("anatomy"), 100.0, LocalDateTime.now().minusDays(14));
-        createProgress(progressRepository, users.get("patel"), courses.get("cardiology"), 80.0, LocalDateTime.now().minusDays(4));
+        // Check if both user and course exist before creating progress record
+        User studentJohn = users.get("studentJohn");
+        Course anatomyPhysiology = courses.get("anatomyPhysiology");
+        
+        if (studentJohn != null && anatomyPhysiology != null) {
+            createProgress(progressRepository, studentJohn, anatomyPhysiology, 65.0, LocalDateTime.now().minusDays(2));
+        } else {
+            log.warn("Cannot create progress: student or course is missing");
+        }
+        
+        User johnForBiochem = users.get("studentJohn");
+        Course biochemistry = courses.get("biochemistry");
+        
+        if (johnForBiochem != null && biochemistry != null) {
+            createProgress(progressRepository, johnForBiochem, biochemistry, 80.0, LocalDateTime.now().minusDays(3));
+        } else {
+            log.warn("Cannot create progress: student or biochemistry course is missing");
+        }
         
         log.info("Successfully created progress records");
     } catch (Exception e) {
@@ -198,34 +219,38 @@ private void initProgress(ProgressRepository progressRepository, Map<String, Use
 
 @Transactional(propagation = Propagation.REQUIRES_NEW)
 private void initContentProgress(ContentProgressRepository contentProgressRepository, Map<String, Enrollment> enrollments, Map<String, Content> contents) {
-    log.info("Creating content progress data...");
+    log.info("Creating content progress data aligned with frontend...");
     
     try {
-        // Track content-specific progress for Smith in Anatomy
-        createContentProgress(contentProgressRepository, enrollments.get("smithAnatomy"), contents.get("skeletalLecture"), 100.0, LocalDateTime.now().minusDays(55));
-        createContentProgress(contentProgressRepository, enrollments.get("smithAnatomy"), contents.get("jointLecture"), 100.0, LocalDateTime.now().minusDays(50));
-        createContentProgress(contentProgressRepository, enrollments.get("smithAnatomy"), contents.get("boneDevelopment"), 100.0, LocalDateTime.now().minusDays(45));
-        createContentProgress(contentProgressRepository, enrollments.get("smithAnatomy"), contents.get("muscleTypes"), 100.0, LocalDateTime.now().minusDays(40));
-        createContentProgress(contentProgressRepository, enrollments.get("smithAnatomy"), contents.get("muscleContraction"), 100.0, LocalDateTime.now().minusDays(35));
-        createContentProgress(contentProgressRepository, enrollments.get("smithAnatomy"), contents.get("heartAnatomy"), 100.0, LocalDateTime.now().minusDays(30));
-        createContentProgress(contentProgressRepository, enrollments.get("smithAnatomy"), contents.get("vesselStructure"), 100.0, LocalDateTime.now().minusDays(25));
-        createContentProgress(contentProgressRepository, enrollments.get("smithAnatomy"), contents.get("brainAnatomy"), 100.0, LocalDateTime.now().minusDays(20));
-        createContentProgress(contentProgressRepository, enrollments.get("smithAnatomy"), contents.get("spinalCord"), 100.0, LocalDateTime.now().minusDays(15));
+        // Check if both enrollment and content exist before creating progress records
+        Enrollment johnAnatomy = enrollments.get("johnAnatomy");
+        Content courseOverview = contents.get("courseOverview");
         
-        // Create content progress for Smith in Cardiology
-        createContentProgress(contentProgressRepository, enrollments.get("smithCardiology"), contents.get("ecgBasics"), 100.0, LocalDateTime.now().minusDays(10));
-        createContentProgress(contentProgressRepository, enrollments.get("smithCardiology"), contents.get("heartFailure"), 30.0, LocalDateTime.now().minusDays(2));
+        if (johnAnatomy != null && courseOverview != null) {
+            createContentProgress(contentProgressRepository, johnAnatomy, courseOverview, 100.0, LocalDateTime.now().minusDays(28));
+        } else {
+            log.warn("Cannot create content progress: enrollment or content is missing. Enrollment: {}, Content: {}", 
+                johnAnatomy != null ? "exists" : "missing", 
+                courseOverview != null ? "exists" : "missing");
+        }
         
-        // Create content progress for Brown
-        createContentProgress(contentProgressRepository, enrollments.get("brownAnatomy"), contents.get("skeletalLecture"), 100.0, LocalDateTime.now().minusDays(53));
-        createContentProgress(contentProgressRepository, enrollments.get("brownAnatomy"), contents.get("jointLecture"), 100.0, LocalDateTime.now().minusDays(48));
-        createContentProgress(contentProgressRepository, enrollments.get("brownAnatomy"), contents.get("boneDevelopment"), 100.0, LocalDateTime.now().minusDays(43));
-        createContentProgress(contentProgressRepository, enrollments.get("brownAnatomy"), contents.get("muscleTypes"), 100.0, LocalDateTime.now().minusDays(38));
-        createContentProgress(contentProgressRepository, enrollments.get("brownAnatomy"), contents.get("muscleContraction"), 100.0, LocalDateTime.now().minusDays(33));
-        createContentProgress(contentProgressRepository, enrollments.get("brownAnatomy"), contents.get("heartAnatomy"), 100.0, LocalDateTime.now().minusDays(28));
-        createContentProgress(contentProgressRepository, enrollments.get("brownAnatomy"), contents.get("vesselStructure"), 100.0, LocalDateTime.now().minusDays(23));
-        createContentProgress(contentProgressRepository, enrollments.get("brownAnatomy"), contents.get("brainAnatomy"), 100.0, LocalDateTime.now().minusDays(18));
-        createContentProgress(contentProgressRepository, enrollments.get("brownAnatomy"), contents.get("spinalCord"), 100.0, LocalDateTime.now().minusDays(13));
+        Enrollment johnAnatomyForTerminology = enrollments.get("johnAnatomy");
+        Content anatomicalTerminology = contents.get("anatomicalTerminology");
+        
+        if (johnAnatomyForTerminology != null && anatomicalTerminology != null) {
+            createContentProgress(contentProgressRepository, johnAnatomyForTerminology, anatomicalTerminology, 100.0, LocalDateTime.now().minusDays(27));
+        } else {
+            log.warn("Cannot create content progress: enrollment or anatomicalTerminology content is missing");
+        }
+        
+        Enrollment johnAnatomyForQuiz = enrollments.get("johnAnatomy");
+        Content bodyPlanesQuiz = contents.get("bodyPlanesQuiz");
+        
+        if (johnAnatomyForQuiz != null && bodyPlanesQuiz != null) {
+            createContentProgress(contentProgressRepository, johnAnatomyForQuiz, bodyPlanesQuiz, 100.0, LocalDateTime.now().minusDays(26));
+        } else {
+            log.warn("Cannot create content progress: enrollment or bodyPlanesQuiz content is missing");
+        }
         
         log.info("Successfully created content progress records");
     } catch (Exception e) {
@@ -239,20 +264,13 @@ private Map<String, Quiz> initQuizzes(QuizRepository quizRepository, Map<String,
     Map<String, Quiz> quizzes = new HashMap<>();
     
     try {
-        // Anatomy quiz
+        // Updated course references to match what's in initCourses
         Quiz anatomyQuiz = createQuiz(quizRepository, "Human Anatomy Midterm", 
             "Comprehensive assessment of skeletal and muscular systems", 
             60, LocalDateTime.now().minusDays(40), LocalDateTime.now().minusDays(39), 
-            70.0, true, true, courses.get("anatomy"));
-        
-        // Cardiology quiz
-        Quiz cardiologyQuiz = createQuiz(quizRepository, "Cardiac Assessment", 
-            "Evaluation of heart function and cardiac disorders", 
-            45, LocalDateTime.now().minusDays(20), LocalDateTime.now().minusDays(18), 
-            75.0, true, true, courses.get("cardiology"));
+            70.0, true, true, courses.get("anatomyPhysiology")); // Changed from "anatomy" to "anatomyPhysiology"
         
         quizzes.put("anatomyQuiz", anatomyQuiz);
-        quizzes.put("cardiologyQuiz", cardiologyQuiz);
         
         log.info("Successfully created {} quizzes", quizzes.size());
     } catch (Exception e) {
@@ -268,36 +286,42 @@ private Map<String, Question> initQuestions(QuestionRepository questionRepositor
     Map<String, Question> questions = new HashMap<>();
     
     try {
-        // Create questions for anatomy quiz
-        Question q1 = createQuestion(questionRepository, "Which of the following is NOT a bone in the human wrist?", 
-            QuestionType.MULTIPLE_CHOICE, 5, 1, "The human wrist contains 8 carpal bones.", quizzes.get("anatomyQuiz"));
+        // Create questions only for quizzes that exist
+        if (quizzes.get("anatomyQuiz") != null) {
+            Question q1 = createQuestion(questionRepository, "Which of the following is NOT a bone in the human wrist?", 
+                QuestionType.MULTIPLE_CHOICE, 5, 1, "The human wrist contains 8 carpal bones.", quizzes.get("anatomyQuiz"));
+            
+            Question q2 = createQuestion(questionRepository, "The femur articulates with which of the following bones?", 
+                QuestionType.MULTIPLE_ANSWER, 5, 2, "The femur articulates with the acetabulum of the pelvis and the tibia of the lower leg.", quizzes.get("anatomyQuiz"));
+            
+            Question q3 = createQuestion(questionRepository, "The biceps brachii muscle has its origin on the:", 
+                QuestionType.MULTIPLE_CHOICE, 5, 3, "The biceps brachii has two heads with origins on the scapula.", quizzes.get("anatomyQuiz"));
+            
+            Question q4 = createQuestion(questionRepository, "The human heart has how many chambers?", 
+                QuestionType.MULTIPLE_CHOICE, 5, 4, "The human heart is a four-chambered organ.", quizzes.get("anatomyQuiz"));
+            
+            Question q5 = createQuestion(questionRepository, "Describe the structure and function of the blood-brain barrier.", 
+                QuestionType.ESSAY, 10, 5, "The blood-brain barrier is a highly selective semipermeable border that separates the circulating blood from the brain and extracellular fluid in the central nervous system.", quizzes.get("anatomyQuiz"));
+            
+            questions.put("q1", q1);
+            questions.put("q2", q2);
+            questions.put("q3", q3);
+            questions.put("q4", q4);
+            questions.put("q5", q5);
+        }
         
-        Question q2 = createQuestion(questionRepository, "The femur articulates with which of the following bones?", 
-            QuestionType.MULTIPLE_ANSWER, 5, 2, "The femur articulates with the acetabulum of the pelvis and the tibia of the lower leg.", quizzes.get("anatomyQuiz"));
-        
-        Question q3 = createQuestion(questionRepository, "The biceps brachii muscle has its origin on the:", 
-            QuestionType.MULTIPLE_CHOICE, 5, 3, "The biceps brachii has two heads with origins on the scapula.", quizzes.get("anatomyQuiz"));
-        
-        Question q4 = createQuestion(questionRepository, "The human heart has how many chambers?", 
-            QuestionType.MULTIPLE_CHOICE, 5, 4, "The human heart is a four-chambered organ.", quizzes.get("anatomyQuiz"));
-        
-        Question q5 = createQuestion(questionRepository, "Describe the structure and function of the blood-brain barrier.", 
-            QuestionType.ESSAY, 10, 5, "The blood-brain barrier is a highly selective semipermeable border that separates the circulating blood from the brain and extracellular fluid in the central nervous system.", quizzes.get("anatomyQuiz"));
-        
-        // Create questions for cardiology quiz
+        // Remove the cardiology quiz questions since that quiz doesn't exist
+        // DO NOT create these questions that depend on non-existent quizzes
+        /*
         Question cq1 = createQuestion(questionRepository, "The P wave on an ECG represents:", 
             QuestionType.MULTIPLE_CHOICE, 5, 1, "The P wave represents atrial depolarization.", quizzes.get("cardiologyQuiz"));
-        
+            
         Question cq2 = createQuestion(questionRepository, "Which of the following medications is NOT used to treat heart failure?", 
             QuestionType.MULTIPLE_CHOICE, 5, 2, "Common heart failure medications include ACE inhibitors, beta-blockers, diuretics, and ARBs.", quizzes.get("cardiologyQuiz"));
-        
-        questions.put("q1", q1);
-        questions.put("q2", q2);
-        questions.put("q3", q3);
-        questions.put("q4", q4);
-        questions.put("q5", q5);
+            
         questions.put("cq1", cq1);
         questions.put("cq2", cq2);
+        */
         
         log.info("Successfully created {} questions", questions.size());
     } catch (Exception e) {
@@ -309,75 +333,36 @@ private Map<String, Question> initQuestions(QuestionRepository questionRepositor
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
 private Map<String, Enrollment> initEnrollments(EnrollmentRepository enrollmentRepository, Map<String, User> users, Map<String, Course> courses) {
-    log.info("Creating course enrollments...");
+    log.info("Creating enrollments aligned with frontend...");
     Map<String, Enrollment> enrollments = new HashMap<>();
     
     try {
-        // Enroll students in Anatomy (most basic course)
-        Enrollment smithAnatomyEnrollment = createEnrollment(enrollmentRepository, users.get("smith"), courses.get("anatomy"), 
-            EnrollmentStatus.APPROVED, LocalDateTime.now().minusDays(60), 75.0);
+        // Check if both the user and course exist before creating the enrollment
+        User studentJohn = users.get("studentJohn");
+        Course anatomyPhysiology = courses.get("anatomyPhysiology");
         
-        Enrollment brownAnatomyEnrollment = createEnrollment(enrollmentRepository, users.get("brown"), courses.get("anatomy"), 
-            EnrollmentStatus.APPROVED, LocalDateTime.now().minusDays(58), 85.0);
+        if (studentJohn != null && anatomyPhysiology != null) {
+            Enrollment johnAnatomy = createEnrollment(enrollmentRepository, studentJohn, anatomyPhysiology, 
+                EnrollmentStatus.APPROVED, LocalDateTime.now().minusDays(30), 65.0);
+            enrollments.put("johnAnatomy", johnAnatomy);
+        } else {
+            log.warn("Cannot create enrollment: student or course is missing. Student: {}, Course: {}", 
+                studentJohn != null ? "exists" : "missing", 
+                anatomyPhysiology != null ? "exists" : "missing");
+        }
         
-        Enrollment patelAnatomyEnrollment = createEnrollment(enrollmentRepository, users.get("patel"), courses.get("anatomy"), 
-            EnrollmentStatus.APPROVED, LocalDateTime.now().minusDays(62), 90.0);
+        User johnForBiochem = users.get("studentJohn");
+        Course biochemistry = courses.get("biochemistry");
         
-        Enrollment garciaAnatomyEnrollment = createEnrollment(enrollmentRepository, users.get("garcia"), courses.get("anatomy"), 
-            EnrollmentStatus.APPROVED, LocalDateTime.now().minusDays(59), 70.0);
-        
-        Enrollment kimAnatomyEnrollment = createEnrollment(enrollmentRepository, users.get("kim"), courses.get("anatomy"), 
-            EnrollmentStatus.APPROVED, LocalDateTime.now().minusDays(57), 95.0);
-        
-        // Enroll students in Cardiology (after completing anatomy)
-        Enrollment smithCardiologyEnrollment = createEnrollment(enrollmentRepository, users.get("smith"), courses.get("cardiology"), 
-            EnrollmentStatus.APPROVED, LocalDateTime.now().minusDays(30), 65.0);
-        
-        Enrollment patelCardiologyEnrollment = createEnrollment(enrollmentRepository, users.get("patel"), courses.get("cardiology"), 
-            EnrollmentStatus.APPROVED, LocalDateTime.now().minusDays(32), 80.0);
-        
-        Enrollment garciaCardiologyEnrollment = createEnrollment(enrollmentRepository, users.get("garcia"), courses.get("cardiology"), 
-            EnrollmentStatus.APPROVED, LocalDateTime.now().minusDays(28), 60.0);
-        
-        // Enroll students in Surgical Techniques
-        Enrollment brownSurgicalEnrollment = createEnrollment(enrollmentRepository, users.get("brown"), courses.get("surgicalTech"), 
-            EnrollmentStatus.APPROVED, LocalDateTime.now().minusDays(25), 78.0);
-        
-        Enrollment kimSurgicalEnrollment = createEnrollment(enrollmentRepository, users.get("kim"), courses.get("surgicalTech"), 
-            EnrollmentStatus.APPROVED, LocalDateTime.now().minusDays(22), 92.0);
-        
-        // Enroll students in Pediatric Care
-        Enrollment millerPediatricEnrollment = createEnrollment(enrollmentRepository, users.get("miller"), courses.get("pediatricCare"), 
-            EnrollmentStatus.APPROVED, LocalDateTime.now().minusDays(40), 85.0);
-        
-        Enrollment wilsonPediatricEnrollment = createEnrollment(enrollmentRepository, users.get("wilson"), courses.get("pediatricCare"), 
-            EnrollmentStatus.APPROVED, LocalDateTime.now().minusDays(39), 75.0);
-        
-        // Additional enrollments
-        Enrollment davisOrthoEnrollment = createEnrollment(enrollmentRepository, users.get("davis"), courses.get("orthopedicSurgery"), 
-            EnrollmentStatus.PENDING, LocalDateTime.now().minusDays(5), 0.0);
-        
-        Enrollment jonesNeuroEnrollment = createEnrollment(enrollmentRepository, users.get("jones"), courses.get("neurologicalDisorders"), 
-            EnrollmentStatus.APPROVED, LocalDateTime.now().minusDays(45), 82.0);
-        
-        Enrollment leeRadiologyEnrollment = createEnrollment(enrollmentRepository, users.get("lee"), courses.get("diagnosticImaging"), 
-            EnrollmentStatus.APPROVED, LocalDateTime.now().minusDays(50), 88.0);
-
-        enrollments.put("smithAnatomy", smithAnatomyEnrollment);
-        enrollments.put("brownAnatomy", brownAnatomyEnrollment);
-        enrollments.put("patelAnatomy", patelAnatomyEnrollment);
-        enrollments.put("garciaAnatomy", garciaAnatomyEnrollment);
-        enrollments.put("kimAnatomy", kimAnatomyEnrollment);
-        enrollments.put("smithCardiology", smithCardiologyEnrollment);
-        enrollments.put("patelCardiology", patelCardiologyEnrollment);
-        enrollments.put("garciaCardiology", garciaCardiologyEnrollment);
-        enrollments.put("brownSurgical", brownSurgicalEnrollment);
-        enrollments.put("kimSurgical", kimSurgicalEnrollment);
-        enrollments.put("millerPediatric", millerPediatricEnrollment);
-        enrollments.put("wilsonPediatric", wilsonPediatricEnrollment);
-        enrollments.put("davisOrtho", davisOrthoEnrollment);
-        enrollments.put("jonesNeuro", jonesNeuroEnrollment);
-        enrollments.put("leeRadiology", leeRadiologyEnrollment);
+        if (johnForBiochem != null && biochemistry != null) {
+            Enrollment johnBiochem = createEnrollment(enrollmentRepository, johnForBiochem, biochemistry, 
+                EnrollmentStatus.APPROVED, LocalDateTime.now().minusDays(28), 80.0);
+            enrollments.put("johnBiochem", johnBiochem);
+        } else {
+            log.warn("Cannot create enrollment: student or biochemistry course is missing. Student: {}, Biochemistry course: {}", 
+                johnForBiochem != null ? "exists" : "missing", 
+                biochemistry != null ? "exists" : "missing");
+        }
         
         log.info("Successfully created {} enrollments", enrollments.size());
     } catch (Exception e) {
@@ -386,92 +371,51 @@ private Map<String, Enrollment> initEnrollments(EnrollmentRepository enrollmentR
     
     return enrollments;
 }
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+
+@Transactional(propagation = Propagation.REQUIRES_NEW)
 private Map<String, Content> initContent(ContentRepository contentRepository, Map<String, Course> courses, Map<String, Module> modules, Map<String, Tag> tags) {
-    log.info("Creating course content...");
+    log.info("Creating course content aligned with frontend...");
     Map<String, Content> contents = new HashMap<>();
     
     try {
-        // Create content for Anatomy modules
-        Content skeletalLecture = createContent(contentRepository, "Skeletal System Overview", 
-            "Comprehensive introduction to the human skeletal system", 
-            courses.get("anatomy"), ContentType.VIDEO, "skeletal_system.mp4", "video/mp4", 1024L, modules.get("skeletal"), 1);
-        skeletalLecture.setTags(List.of(tags.get("anatomy"), tags.get("lecture"), tags.get("video")));
-        contentRepository.save(skeletalLecture);
+        // Introduction to Anatomy Module content
+        Content courseOverview = createContent(contentRepository, "Course Overview", 
+            "Introduction to the course and its objectives", 
+            courses.get("anatomyPhysiology"), ContentType.ARTICLE, "course_overview.pdf", "application/pdf", 512L, modules.get("introAnatomy"), 1);
         
-        Content jointLecture = createContent(contentRepository, "Joint Structure and Function", 
-            "Detailed examination of synovial, fibrous and cartilaginous joints", 
-            courses.get("anatomy"), ContentType.VIDEO, "joints.mp4", "video/mp4", 1536L, modules.get("skeletal"), 2);
-        jointLecture.setTags(List.of(tags.get("anatomy"), tags.get("lecture"), tags.get("video")));
-        contentRepository.save(jointLecture);
+        // Check if tags exist before adding them
+        List<Tag> overviewTags = new ArrayList<>();
+        if (tags.get("anatomy") != null) overviewTags.add(tags.get("anatomy"));
+        if (tags.get("pdf") != null) overviewTags.add(tags.get("pdf"));
+        courseOverview.setTags(overviewTags);
+        contentRepository.save(courseOverview);
+        contents.put("courseOverview", courseOverview);
         
-        Content boneDevelopment = createContent(contentRepository, "Bone Development", 
-            "Ossification process and bone growth through lifespan", 
-            courses.get("anatomy"), ContentType.ARTICLE, "bone_development.pdf", "application/pdf", 2048L, modules.get("skeletal"), 3);
-        boneDevelopment.setTags(List.of(tags.get("anatomy"), tags.get("pdf")));
-        contentRepository.save(boneDevelopment);
+        Content anatomicalTerminology = createContent(contentRepository, "Anatomical Terminology", 
+            "Standard terminology used in anatomical descriptions", 
+            courses.get("anatomyPhysiology"), ContentType.VIDEO, "anatomical_terminology.mp4", "video/mp4", 1536L, modules.get("introAnatomy"), 2);
         
-        Content muscleTypes = createContent(contentRepository, "Types of Muscle Tissue", 
-            "Skeletal, cardiac and smooth muscle structure and function", 
-            courses.get("anatomy"), ContentType.VIDEO, "muscle_types.mp4", "video/mp4", 1280L, modules.get("muscular"), 1);
-        muscleTypes.setTags(List.of(tags.get("anatomy"), tags.get("lecture"), tags.get("video")));
-        contentRepository.save(muscleTypes);
+        // Check if tags exist before adding them
+        List<Tag> terminologyTags = new ArrayList<>();
+        if (tags.get("anatomy") != null) terminologyTags.add(tags.get("anatomy"));
+        if (tags.get("video") != null) terminologyTags.add(tags.get("video"));
+        anatomicalTerminology.setTags(terminologyTags);
+        contentRepository.save(anatomicalTerminology);
+        contents.put("anatomicalTerminology", anatomicalTerminology);
         
-        Content muscleContraction = createContent(contentRepository, "Muscle Contraction", 
-            "Sliding filament theory and excitation-contraction coupling", 
-            courses.get("anatomy"), ContentType.ARTICLE, "muscle_contraction.pdf", "application/pdf", 1792L, modules.get("muscular"), 2);
-        muscleContraction.setTags(List.of(tags.get("anatomy"), tags.get("pdf")));
-        contentRepository.save(muscleContraction);
+        Content bodyPlanesQuiz = createContent(contentRepository, "Body Planes and Sections", 
+            "Quiz on anatomical planes and body sections", 
+            courses.get("anatomyPhysiology"), ContentType.QUIZ, "body_planes_quiz.json", "application/json", 256L, modules.get("introAnatomy"), 3);
         
-        Content heartAnatomy = createContent(contentRepository, "Heart Anatomy", 
-            "Chambers, valves and cardiac circulation", 
-            courses.get("anatomy"), ContentType.VIDEO, "heart_anatomy.mp4", "video/mp4", 2304L, modules.get("cardiovascular"), 1);
-        heartAnatomy.setTags(List.of(tags.get("anatomy"), tags.get("cardiology"), tags.get("video")));
-        contentRepository.save(heartAnatomy);
+        // Check if tags exist before adding them
+        List<Tag> quizTags = new ArrayList<>();
+        if (tags.get("anatomy") != null) quizTags.add(tags.get("anatomy"));
+        if (tags.get("quiz") != null) quizTags.add(tags.get("quiz"));
+        bodyPlanesQuiz.setTags(quizTags);
+        contentRepository.save(bodyPlanesQuiz);
+        contents.put("bodyPlanesQuiz", bodyPlanesQuiz);
         
-        Content vesselStructure = createContent(contentRepository, "Blood Vessel Structure", 
-            "Arteries, veins and capillaries - wall structure and specializations", 
-            courses.get("anatomy"), ContentType.ARTICLE, "vessel_structure.pdf", "application/pdf", 1536L, modules.get("cardiovascular"), 2);
-        vesselStructure.setTags(List.of(tags.get("anatomy"), tags.get("cardiology"), tags.get("pdf")));
-        contentRepository.save(vesselStructure);
-        
-        Content brainAnatomy = createContent(contentRepository, "Brain Anatomy", 
-            "Cerebrum, cerebellum, brain stem and functional areas", 
-            courses.get("anatomy"), ContentType.VIDEO, "brain_anatomy.mp4", "video/mp4", 2560L, modules.get("nervous"), 1);
-        brainAnatomy.setTags(List.of(tags.get("anatomy"), tags.get("neurology"), tags.get("video")));
-        contentRepository.save(brainAnatomy);
-        
-        Content spinalCord = createContent(contentRepository, "Spinal Cord and Nerves", 
-            "Spinal tracts, reflexes and peripheral nervous system", 
-            courses.get("anatomy"), ContentType.ARTICLE, "spinal_cord.pdf", "application/pdf", 1792L, modules.get("nervous"), 2);
-        spinalCord.setTags(List.of(tags.get("anatomy"), tags.get("neurology"), tags.get("pdf")));
-        contentRepository.save(spinalCord);
-        
-        // Create content for other courses
-        // Cardiology course content
-        Content ecgBasics = createContent(contentRepository, "ECG Interpretation Basics", 
-            "Fundamentals of electrocardiogram reading and analysis", 
-            courses.get("cardiology"), ContentType.VIDEO, "ecg_basics.mp4", "video/mp4", 1848L, modules.get("heartPhysiology"), 1);
-        ecgBasics.setTags(List.of(tags.get("cardiology"), tags.get("video")));
-        contentRepository.save(ecgBasics);
-        
-        Content heartFailure = createContent(contentRepository, "Heart Failure Management", 
-            "Diagnosis and treatment approaches for heart failure", 
-            courses.get("cardiology"), ContentType.ARTICLE, "heart_failure.pdf", "application/pdf", 2048L, modules.get("cardioDisorders"), 1);
-        heartFailure.setTags(List.of(tags.get("cardiology"), tags.get("pdf")));
-        contentRepository.save(heartFailure);
-        
-        contents.put("skeletalLecture", skeletalLecture);
-        contents.put("jointLecture", jointLecture);
-        contents.put("boneDevelopment", boneDevelopment);
-        contents.put("muscleTypes", muscleTypes);
-        contents.put("muscleContraction", muscleContraction);
-        contents.put("heartAnatomy", heartAnatomy);
-        contents.put("vesselStructure", vesselStructure);
-        contents.put("brainAnatomy", brainAnatomy);
-        contents.put("spinalCord", spinalCord);
-        contents.put("ecgBasics", ecgBasics);
-        contents.put("heartFailure", heartFailure);
+        // Add more content items to match frontend data...
         
         log.info("Successfully created {} content items", contents.size());
     } catch (Exception e) {
@@ -480,104 +424,298 @@ private Map<String, Content> initContent(ContentRepository contentRepository, Ma
     
     return contents;
 }
+
+@Transactional(propagation = Propagation.REQUIRES_NEW)
+private Map<String, QuizAttempt> initQuizAttempts(QuizAttemptRepository quizAttemptRepository, Map<String, Quiz> quizzes, Map<String, User> users) {
+    log.info("Creating quiz attempts...");
+    Map<String, QuizAttempt> attempts = new HashMap<>();
     
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    private Map<String, Module> initModules(ModuleRepository moduleRepository) {
-        log.info("Creating course modules...");
-        Map<String, Module> modules = new HashMap<>();
-        
-        try {
-            // Anatomy modules
-            Module anatomyModule1 = createModule(moduleRepository, "Skeletal System", "Study of bones, cartilage and joints", 1);
-            Module anatomyModule2 = createModule(moduleRepository, "Muscular System", "Study of muscles and associated tissues", 2);
-            Module anatomyModule3 = createModule(moduleRepository, "Cardiovascular System", "Study of heart and blood vessels", 3);
-            Module anatomyModule4 = createModule(moduleRepository, "Nervous System", "Study of brain, spinal cord and nerves", 4);
-            
-            // Cardiology modules
-            Module cardioModule1 = createModule(moduleRepository, "Heart Physiology", "Cardiac function and regulation", 1);
-            Module cardioModule2 = createModule(moduleRepository, "Cardiovascular Disorders", "Common heart and vascular diseases", 2);
-            
-            modules.put("skeletal", anatomyModule1);
-            modules.put("muscular", anatomyModule2);
-            modules.put("cardiovascular", anatomyModule3);
-            modules.put("nervous", anatomyModule4);
-            modules.put("heartPhysiology", cardioModule1);
-            modules.put("cardioDisorders", cardioModule2);
-            
-            log.info("Successfully created {} modules", modules.size());
-        } catch (Exception e) {
-            log.error("Error creating modules: " + e.getMessage(), e);
+    try {
+        // Only create attempts if quiz and user exist
+        if (quizzes.get("anatomyQuiz") != null && users.get("studentJohn") != null) {
+            // Create a passing attempt
+            QuizAttempt johnAnatomyAttempt = createQuizAttempt(
+                quizAttemptRepository,
+                quizzes.get("anatomyQuiz"),
+                users.get("studentJohn"),
+                LocalDateTime.now().minusDays(40),
+                LocalDateTime.now().minusDays(40).plusMinutes(45),
+                17.0, // Score out of 20
+                85.0, // Percentage score
+                true, // Passed
+                AttemptStatus.COMPLETED
+            );
+            attempts.put("johnAnatomyAttempt", johnAnatomyAttempt);
         }
         
-        return modules;
-    }
-
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    private Map<String, Course> initCourses(CourseRepository courseRepository, Map<String, User> users, Map<String, Department> departments) {
-        log.info("Creating medical courses...");
-        Map<String, Course> courses = new HashMap<>();
-        
-        try {
-            Course anatomyCourse = createCourse(courseRepository, "Human Anatomy Fundamentals", 
-                "Comprehensive study of human body structure with focus on clinical applications", 
-                users.get("johnson"), departments.get("internalMedicine"), 50);
-            
-            Course cardiologyCourse = createCourse(courseRepository, "Cardiovascular Medicine", 
-                "Diagnosis and management of heart diseases and vascular disorders", 
-                users.get("johnson"), departments.get("internalMedicine"), 30);
-            
-            Course surgicalTechCourse = createCourse(courseRepository, "Surgical Techniques", 
-                "Fundamental principles and practices of modern surgery", 
-                users.get("chen"), departments.get("surgery"), 25);
-            
-            Course pediatricCareCourse = createCourse(courseRepository, "Pediatric Patient Care", 
-                "Comprehensive approach to treating infants, children and adolescents", 
-                users.get("rodriguez"), departments.get("pediatrics"), 40);
-            
-            Course neuroimagingCourse = createCourse(courseRepository, "Advanced Neuroimaging", 
-                "MRI, CT, and PET applications in neurological diagnosis", 
-                users.get("williams"), departments.get("radiology"), 20);
-            
-            Course neurologicalDisordersCourse = createCourse(courseRepository, "Neurological Disorders", 
-                "Diagnosis and treatment of common nervous system conditions", 
-                users.get("thompson"), departments.get("neurology"), 30);
-            
-            Course orthopedicSurgeryCourse = createCourse(courseRepository, "Orthopedic Surgery Principles", 
-                "Surgical treatment of musculoskeletal trauma and disorders", 
-                users.get("chen"), departments.get("surgery"), 35);
-            
-            Course developmentalMedicineCourse = createCourse(courseRepository, "Developmental Medicine", 
-                "Child growth, development and developmental disorders", 
-                users.get("rodriguez"), departments.get("pediatrics"), 40);
-            
-            Course diagnosticImagingCourse = createCourse(courseRepository, "Diagnostic Imaging Fundamentals", 
-                "Principles and applications of medical imaging technologies", 
-                users.get("williams"), departments.get("radiology"), 45);
-            
-            Course strokeManagementCourse = createCourse(courseRepository, "Stroke Management", 
-                "Acute care and rehabilitation in stroke patients", 
-                users.get("thompson"), departments.get("neurology"), 25);
-    
-            courses.put("anatomy", anatomyCourse);
-            courses.put("cardiology", cardiologyCourse);
-            courses.put("surgicalTech", surgicalTechCourse);
-            courses.put("pediatricCare", pediatricCareCourse);
-            courses.put("neuroimaging", neuroimagingCourse);
-            courses.put("neurologicalDisorders", neurologicalDisordersCourse);
-            courses.put("orthopedicSurgery", orthopedicSurgeryCourse);
-            courses.put("developmentalMedicine", developmentalMedicineCourse);
-            courses.put("diagnosticImaging", diagnosticImagingCourse);
-            courses.put("strokeManagement", strokeManagementCourse);
-            
-            log.info("Successfully created {} courses", courses.size());
-        } catch (Exception e) {
-            log.error("Error creating courses: " + e.getMessage(), e);
+        // Add another attempt from a different student
+        if (quizzes.get("anatomyQuiz") != null && users.get("studentJane") != null) {
+            QuizAttempt janeAnatomyAttempt = createQuizAttempt(
+                quizAttemptRepository,
+                quizzes.get("anatomyQuiz"),
+                users.get("studentJane"),
+                LocalDateTime.now().minusDays(39),
+                LocalDateTime.now().minusDays(39).plusMinutes(50),
+                16.0, // Score out of 20
+                80.0, // Percentage score
+                true, // Passed
+                AttemptStatus.COMPLETED
+            );
+            attempts.put("janeAnatomyAttempt", janeAnatomyAttempt);
         }
         
-        return courses;
+        log.info("Successfully created {} quiz attempts", attempts.size());
+    } catch (Exception e) {
+        log.error("Error creating quiz attempts: " + e.getMessage(), e);
     }
+    
+    return attempts;
+}
+
+@Transactional(propagation = Propagation.REQUIRES_NEW)
+private void initStudentAnswers(StudentAnswerRepository studentAnswerRepository, Map<String, QuizAttempt> attempts, 
+                             Map<String, Question> questions, AnswerOptionRepository answerOptionRepository) {
+    log.info("Creating student answers...");
+    
+    try {
+        // Only create answers if attempt and question exist
+        if (attempts.get("johnAnatomyAttempt") != null && questions.get("q1") != null) {
+            // Find the correct answer option for q1
+            List<AnswerOption> q1Options = answerOptionRepository.findByQuestionId(questions.get("q1").getId());
+            List<AnswerOption> selectedOptions = q1Options.stream()
+                .filter(AnswerOption::isCorrect)
+                .collect(Collectors.toList());
+            
+            // Create the student answer
+            createStudentAnswer(
+                studentAnswerRepository,
+                attempts.get("johnAnatomyAttempt"),
+                questions.get("q1"),
+                selectedOptions,
+                null, // No text answer for multiple choice
+                5.0,  // Full points
+                true, // Correct
+                false, // Not manually graded
+                null  // No instructor feedback
+            );
+            
+            // Create more answers for other questions
+            if (questions.get("q2") != null) {
+                List<AnswerOption> q2Options = answerOptionRepository.findByQuestionId(questions.get("q2").getId());
+                // In this case, let's assume the student got it partially correct
+                List<AnswerOption> q2Selected = q2Options.stream()
+                    .filter(o -> o.getOrderIndex() == 1 || o.getOrderIndex() == 3) // Selected options 1 and 3
+                    .collect(Collectors.toList());
+                
+                createStudentAnswer(
+                    studentAnswerRepository,
+                    attempts.get("johnAnatomyAttempt"),
+                    questions.get("q2"),
+                    q2Selected,
+                    null,
+                    3.0, // Partial credit
+                    false, // Not fully correct
+                    false,
+                    null
+                );
+            }
+            
+            // For an essay question
+            if (questions.get("q5") != null) {
+                createStudentAnswer(
+                    studentAnswerRepository,
+                    attempts.get("johnAnatomyAttempt"),
+                    questions.get("q5"),
+                    new ArrayList<>(), // No selected options for essay
+                    "The blood-brain barrier is a selective membrane that separates the circulating blood from the brain and central nervous system. It consists of endothelial cells connected by tight junctions, which prevent many substances from entering the brain tissue. This protects the brain from harmful substances while allowing essential nutrients and oxygen to pass through.",
+                    9.0, // 9 out of 10 points
+                    false, // Not automatically correct
+                    true, // Manually graded
+                    "Good explanation of the structure and function, but could have mentioned more about the role of astrocytes in maintaining the barrier."
+                );
+            }
+        }
+        
+        // Create answers for Jane's attempt also (if needed)
+        
+        log.info("Successfully created student answers");
+    } catch (Exception e) {
+        log.error("Error creating student answers: " + e.getMessage(), e);
+    }
+}
+
+// Helper method to initialize submissions
+@Transactional(propagation = Propagation.REQUIRES_NEW)
+private void initSubmissions(SubmissionRepository submissionRepository, Map<String, Assignment> assignments, Map<String, User> users) {
+    log.info("Creating assignment submissions...");
+    
+    try {
+        // Only create submissions for assignments and users that exist
+        if (assignments.get("anatomyAssignment") != null && users.get("studentJohn") != null) {
+            createSubmission(submissionRepository, 
+                assignments.get("anatomyAssignment").getId(), 
+                users.get("studentJohn").getId(), 
+                "john_skeletal_system_assignment.pdf", 
+                LocalDateTime.now().minusDays(48));
+        }
+        
+        if (assignments.get("anatomyAssignment") != null && users.get("studentJane") != null) {
+            createSubmission(submissionRepository, 
+                assignments.get("anatomyAssignment").getId(), 
+                users.get("studentJane").getId(), 
+                "jane_skeletal_system_assignment.pdf", 
+                LocalDateTime.now().minusDays(47));
+        }
+        
+        log.info("Successfully created assignment submissions");
+    } catch (Exception e) {
+        log.error("Error creating submissions: " + e.getMessage(), e);
+    }
+}
+
+@Transactional(propagation = Propagation.REQUIRES_NEW)
+private void initAnswerOptions(AnswerOptionRepository answerOptionRepository, Map<String, Question> questions) {
+    log.info("Creating answer options...");
+    
+    try {
+        // Create answer options for question 1
+        if (questions.get("q1") != null) {
+            createAnswerOption(answerOptionRepository, "Trapezium", true, "Correct! The trapezium is one of the 8 carpal bones.", 1, questions.get("q1"));
+            createAnswerOption(answerOptionRepository, "Phalanx", false, "Incorrect. Phalanges are found in the fingers and toes.", 2, questions.get("q1"));
+            createAnswerOption(answerOptionRepository, "Metacarpal", false, "Incorrect. Metacarpals are found in the palm of the hand.", 3, questions.get("q1"));
+            createAnswerOption(answerOptionRepository, "Patella", false, "Incorrect. The patella is the kneecap.", 4, questions.get("q1"));
+        }
+        
+        // Create answer options for question 2
+        if (questions.get("q2") != null) {
+            createAnswerOption(answerOptionRepository, "Acetabulum", true, "Correct! The femur articulates with the acetabulum of the pelvis.", 1, questions.get("q2"));
+            createAnswerOption(answerOptionRepository, "Humerus", false, "Incorrect. The humerus is in the upper arm.", 2, questions.get("q2"));
+            createAnswerOption(answerOptionRepository, "Tibia", true, "Correct! The femur articulates with the tibia at the knee joint.", 3, questions.get("q2"));
+            createAnswerOption(answerOptionRepository, "Fibula", false, "Incorrect. The femur does not directly articulate with the fibula.", 4, questions.get("q2"));
+        }
+        
+        // Add more answer options for other questions
+        
+        log.info("Successfully created answer options");
+    } catch (Exception e) {
+        log.error("Error creating answer options: " + e.getMessage(), e);
+    }
+}
+@Transactional(propagation = Propagation.REQUIRES_NEW)
+private Map<String, Module> initModules(ModuleRepository moduleRepository, Map<String, Course> courses) {
+    log.info("Creating course modules aligned with frontend...");
+    Map<String, Module> modules = new HashMap<>();
+    
+    try {
+        // For Anatomy & Physiology
+        Module introAnatomy = new Module();
+        introAnatomy.setTitle("Introduction to Anatomy");
+        introAnatomy.setDescription("Basic concepts and terminology in anatomy");
+        introAnatomy.setSequence(1);
+        introAnatomy.setStatus(ModuleStatus.PUBLISHED);
+        introAnatomy.setIsReleased(true);
+        introAnatomy.setCourse(courses.get("anatomyPhysiology"));
+        moduleRepository.save(introAnatomy);
+        modules.put("introAnatomy", introAnatomy);
+        
+        Module cellsTissues = new Module();
+        cellsTissues.setTitle("Cells & Tissues");
+        cellsTissues.setDescription("Cellular structure and tissue types");
+        cellsTissues.setSequence(2);
+        cellsTissues.setStatus(ModuleStatus.PUBLISHED);
+        cellsTissues.setIsReleased(true);
+        cellsTissues.setCourse(courses.get("anatomyPhysiology"));
+        moduleRepository.save(cellsTissues);
+        modules.put("cellsTissues", cellsTissues);
+        
+        Module skeletalSystem = new Module();
+        skeletalSystem.setTitle("Skeletal System");
+        skeletalSystem.setDescription("Bone structure, types, and skeletal anatomy");
+        skeletalSystem.setSequence(3);
+        skeletalSystem.setStatus(ModuleStatus.PUBLISHED);
+        skeletalSystem.setIsReleased(false);
+        skeletalSystem.setCourse(courses.get("anatomyPhysiology"));
+        moduleRepository.save(skeletalSystem);
+        modules.put("skeletalSystem", skeletalSystem);
+        
+        // Add more modules for other courses...
+        
+        log.info("Successfully created {} modules", modules.size());
+    } catch (Exception e) {
+        log.error("Error creating modules: " + e.getMessage(), e);
+    }
+    
+    return modules;
+}
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
+private Map<String, Course> initCourses(CourseRepository courseRepository, Map<String, User> users, Map<String, Department> departments, UserRepository userRepository, Map<String, Role> roles) {
+    log.info("Creating medical courses...");
+    Map<String, Course> courses = new HashMap<>();
+    
+    try {
+        // Create courses that match frontend data
+        Course anatomyPhysiology = Course.builder()
+                .title("Human Anatomy & Physiology")
+                .description("A comprehensive study of human anatomy and physiology covering body systems, tissues, and organs.")
+                .instructor(users.get("janeSmith"))
+                .department(departments.get("anatomy"))
+                .code("MED201")
+                .maxCapacity(100)
+                .semester("Fall 2025")
+                .credits(4)
+                .imageUrl("https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7?q=80&w=1000&auto=format&fit=crop")
+                .status("in-progress")
+                .published(true)
+                .archived(false)
+                .startDate(LocalDateTime.now().minusMonths(1))
+                .endDate(LocalDateTime.now().plusMonths(3))
+                .students(new HashSet<>())
+                .prerequisites(new HashSet<>())
+                .build();
+        
+        // Add student enrollments to match frontend counts
+        for (int i = 0; i < 68; i++) {
+            User student = createDummyStudent(userRepository, "student" + i + "@medlms.com", 
+                "Student " + i, "password123", roles.get("STUDENT"));
+            anatomyPhysiology.getStudents().add(student);
+        }
+        
+        courseRepository.save(anatomyPhysiology);
+        courses.put("anatomyPhysiology", anatomyPhysiology);
+        
+        // Add biochemistry course that's referenced elsewhere
+        Course biochemistry = Course.builder()
+                .title("Biochemistry Fundamentals")
+                .description("Study of chemical processes and substances in living organisms.")
+                .instructor(users.get("robertJohnson"))
+                .department(departments.get("biochemistry"))
+                .code("MED202")
+                .maxCapacity(80)
+                .semester("Fall 2025")
+                .credits(3)
+                .imageUrl("https://images.unsplash.com/photo-1576086135878-bd1e45f50f00?q=80&w=1000&auto=format&fit=crop")
+                .status("in-progress")
+                .published(true)
+                .archived(false)
+                .startDate(LocalDateTime.now().minusMonths(1))
+                .endDate(LocalDateTime.now().plusMonths(3))
+                .students(new HashSet<>())
+                .prerequisites(new HashSet<>())
+                .build();
+                
+        courseRepository.save(biochemistry);
+        courses.put("biochemistry", biochemistry);
+        
+        log.info("Successfully created {} courses aligned with frontend", courses.size());
+    } catch (Exception e) {
+        log.error("Error creating frontend-aligned courses: " + e.getMessage(), e);
+    }
+    
+    return courses;
+}
+
+@Transactional(propagation = Propagation.REQUIRES_NEW)
 private Map<String, Tag> initTags(TagRepository tagRepository) {
     log.info("Creating content tags...");
     Map<String, Tag> tags = new HashMap<>();
@@ -620,17 +758,24 @@ private Map<String, Department> initDepartments(DepartmentRepository departmentR
     Map<String, Department> departments = new HashMap<>();
     
     try {
-        Department internalMedicine = createDepartment(departmentRepository, "Internal Medicine", "Study of adult diseases", "MED", "Internal Medicine and General Practice", "Dr. Sarah Johnson", "medicine@example.com");
-        Department surgery = createDepartment(departmentRepository, "Surgery", "Surgical interventions and procedures", "SURG", "Surgical Specialties", "Dr. Michael Chen", "surgery@example.com");
-        Department pediatrics = createDepartment(departmentRepository, "Pediatrics", "Child and adolescent healthcare", "PEDS", "Child and Adolescent Medicine", "Dr. Emily Rodriguez", "pediatrics@example.com");
-        Department radiology = createDepartment(departmentRepository, "Radiology", "Medical imaging and diagnostics", "RAD", "Diagnostic Imaging", "Dr. Robert Williams", "radiology@example.com");
-        Department neurology = createDepartment(departmentRepository, "Neurology", "Study of nervous system disorders", "NEURO", "Neurological Sciences", "Dr. Lisa Thompson", "neurology@example.com");
+        // Keep existing departments but align names with frontend data
+        Department anatomy = createDepartment(departmentRepository, "Anatomy", "Study of body structure and organization", "ANAT", "Anatomical Sciences", "Dr. Jane Smith", "anatomy@example.com");
+        Department biochemistry = createDepartment(departmentRepository, "Biochemistry", "Study of chemical processes and substances in living organisms", "BIOC", "Biochemical Sciences", "Dr. Robert Johnson", "biochemistry@example.com");
+        Department pathology = createDepartment(departmentRepository, "Pathology", "Study of disease processes and their effects", "PATH", "Pathological Sciences", "Dr. Maria Garcia", "pathology@example.com");
+        Department pharmacology = createDepartment(departmentRepository, "Pharmacology", "Study of drug action and effects", "PHARM", "Pharmaceutical Sciences", "Dr. David Chen", "pharmacology@example.com");
+        Department medHumanities = createDepartment(departmentRepository, "Medical Humanities", "Study of ethics and humanities in medicine", "MH", "Medical Humanities", "Dr. Sarah Williams", "med-humanities@example.com");
+        Department clinicalSciences = createDepartment(departmentRepository, "Clinical Sciences", "Study of applied clinical medicine", "CLIN", "Clinical Practice", "Dr. Michael Brown", "clinical-sciences@example.com");
+        Department medFoundation = createDepartment(departmentRepository, "Medical Foundation", "Fundamental medical concepts and terminology", "MEDF", "Medical Foundation Studies", "Dr. Emily Taylor", "med-foundation@example.com");
+        Department biology = createDepartment(departmentRepository, "Biology", "Study of living organisms and their processes", "BIO", "Biological Sciences", "Dr. Thomas White", "biology@example.com");
 
-        departments.put("internalMedicine", internalMedicine);
-        departments.put("surgery", surgery);
-        departments.put("pediatrics", pediatrics);
-        departments.put("radiology", radiology);
-        departments.put("neurology", neurology);
+        departments.put("anatomy", anatomy);
+        departments.put("biochemistry", biochemistry);
+        departments.put("pathology", pathology);
+        departments.put("pharmacology", pharmacology);
+        departments.put("medHumanities", medHumanities);
+        departments.put("clinicalSciences", clinicalSciences);
+        departments.put("medFoundation", medFoundation);
+        departments.put("biology", biology);
         
         log.info("Successfully created {} departments", departments.size());
     } catch (Exception e) {
@@ -665,41 +810,37 @@ private Map<String, User> initUsers(UserRepository userRepository, Map<String, R
         User adminUser = createUser(userRepository, "admin@medlms.com", "Admin User", "password123", roles.get("ADMIN"), null);
         users.put("admin", adminUser);
         
-        // Instructors
-        User instructorJohnson = createUser(userRepository, "johnson@medlms.com", "Dr. Sarah Johnson", "password123", roles.get("INSTRUCTOR"), departments.get("internalMedicine"));
-        User instructorChen = createUser(userRepository, "chen@medlms.com", "Dr. Michael Chen", "password123", roles.get("INSTRUCTOR"), departments.get("surgery"));
-        User instructorRodriguez = createUser(userRepository, "rodriguez@medlms.com", "Dr. Emily Rodriguez", "password123", roles.get("INSTRUCTOR"), departments.get("pediatrics"));
-        User instructorWilliams = createUser(userRepository, "williams@medlms.com", "Dr. Robert Williams", "password123", roles.get("INSTRUCTOR"), departments.get("radiology"));
-        User instructorThompson = createUser(userRepository, "thompson@medlms.com", "Dr. Lisa Thompson", "password123", roles.get("INSTRUCTOR"), departments.get("neurology"));
+        // Instructors - matching frontend data
+        User janeSmith = createUser(userRepository, "jsmith@medlms.com", "Dr. Jane Smith", "password123", roles.get("INSTRUCTOR"), departments.get("anatomy"));
+        User robertJohnson = createUser(userRepository, "rjohnson@medlms.com", "Dr. Robert Johnson", "password123", roles.get("INSTRUCTOR"), departments.get("biochemistry"));
+        User mariaGarcia = createUser(userRepository, "mgarcia@medlms.com", "Dr. Maria Garcia", "password123", roles.get("INSTRUCTOR"), departments.get("pathology"));
+        User davidChen = createUser(userRepository, "dchen@medlms.com", "Dr. David Chen", "password123", roles.get("INSTRUCTOR"), departments.get("pharmacology"));
+        User sarahWilliams = createUser(userRepository, "swilliams@medlms.com", "Dr. Sarah Williams", "password123", roles.get("INSTRUCTOR"), departments.get("medHumanities"));
+        User michaelBrown = createUser(userRepository, "mbrown@medlms.com", "Dr. Michael Brown", "password123", roles.get("INSTRUCTOR"), departments.get("clinicalSciences"));
+        User emilyTaylor = createUser(userRepository, "etaylor@medlms.com", "Dr. Emily Taylor", "password123", roles.get("INSTRUCTOR"), departments.get("medFoundation"));
+        User thomasWhite = createUser(userRepository, "twhite@medlms.com", "Dr. Thomas White", "password123", roles.get("INSTRUCTOR"), departments.get("biology"));
+        User lisaMartinez = createUser(userRepository, "lmartinez@medlms.com", "Dr. Lisa Martinez", "password123", roles.get("INSTRUCTOR"), departments.get("anatomy"));
         
-        users.put("johnson", instructorJohnson);
-        users.put("chen", instructorChen);
-        users.put("rodriguez", instructorRodriguez);
-        users.put("williams", instructorWilliams);
-        users.put("thompson", instructorThompson);
+        users.put("janeSmith", janeSmith);
+        users.put("robertJohnson", robertJohnson);
+        users.put("mariaGarcia", mariaGarcia);
+        users.put("davidChen", davidChen);
+        users.put("sarahWilliams", sarahWilliams);
+        users.put("michaelBrown", michaelBrown);
+        users.put("emilyTaylor", emilyTaylor);
+        users.put("thomasWhite", thomasWhite);
+        users.put("lisaMartinez", lisaMartinez);
         
-        // Students
-        User studentSmith = createUser(userRepository, "smith@student.medlms.com", "John Smith", "password123", roles.get("STUDENT"), departments.get("internalMedicine"));
-        User studentBrown = createUser(userRepository, "brown@student.medlms.com", "Maria Brown", "password123", roles.get("STUDENT"), departments.get("surgery"));
-        User studentPatel = createUser(userRepository, "patel@student.medlms.com", "Raj Patel", "password123", roles.get("STUDENT"), departments.get("pediatrics"));
-        User studentGarcia = createUser(userRepository, "garcia@student.medlms.com", "Sofia Garcia", "password123", roles.get("STUDENT"), departments.get("internalMedicine"));
-        User studentKim = createUser(userRepository, "kim@student.medlms.com", "David Kim", "password123", roles.get("STUDENT"), departments.get("radiology"));
-        User studentMiller = createUser(userRepository, "miller@student.medlms.com", "James Miller", "password123", roles.get("STUDENT"), departments.get("neurology"));
-        User studentWilson = createUser(userRepository, "wilson@student.medlms.com", "Emma Wilson", "password123", roles.get("STUDENT"), departments.get("pediatrics"));
-        User studentDavis = createUser(userRepository, "davis@student.medlms.com", "Alex Davis", "password123", roles.get("STUDENT"), departments.get("surgery"));
-        User studentJones = createUser(userRepository, "jones@student.medlms.com", "Olivia Jones", "password123", roles.get("STUDENT"), departments.get("neurology"));
-        User studentLee = createUser(userRepository, "lee@student.medlms.com", "Daniel Lee", "password123", roles.get("STUDENT"), departments.get("radiology"));
+        // Students - keeping existing students
+        User studentJohn = createUser(userRepository, "jdoe@student.medlms.com", "John Doe", "password123", roles.get("STUDENT"), null);
+        User studentJane = createUser(userRepository, "jalpha@student.medlms.com", "Jane Alpha", "password123", roles.get("STUDENT"), null);
+        User studentSmith = createUser(userRepository, "smith@student.medlms.com", "John Smith", "password123", roles.get("STUDENT"), departments.get("anatomy"));
+        User studentBrown = createUser(userRepository, "brown@student.medlms.com", "Maria Brown", "password123", roles.get("STUDENT"), departments.get("biochemistry"));
         
+        users.put("studentJohn", studentJohn);
+        users.put("studentJane", studentJane);
         users.put("smith", studentSmith);
         users.put("brown", studentBrown);
-        users.put("patel", studentPatel);
-        users.put("garcia", studentGarcia);
-        users.put("kim", studentKim);
-        users.put("miller", studentMiller);
-        users.put("wilson", studentWilson);
-        users.put("davis", studentDavis);
-        users.put("jones", studentJones);
-        users.put("lee", studentLee);
         
         log.info("Successfully created {} users", users.size());
     } catch (Exception e) {
@@ -715,141 +856,22 @@ private void initUserProfiles(UserProfileRepository userProfileRepository, Map<S
     
     try {
         createUserProfile(userProfileRepository, users.get("admin"), "Admin", "User", "123-456-7890", "System administrator with technical expertise.");
-        createUserProfile(userProfileRepository, users.get("johnson"), "Sarah", "Johnson", "123-555-1001", "Professor of Internal Medicine with 15 years of clinical experience. Research focus on cardiovascular health.");
-        createUserProfile(userProfileRepository, users.get("chen"), "Michael", "Chen", "123-555-1002", "Chief of Surgery with specialization in minimally invasive procedures.");
-        createUserProfile(userProfileRepository, users.get("rodriguez"), "Emily", "Rodriguez", "123-555-1003", "Pediatric specialist with expertise in developmental disorders.");
-        createUserProfile(userProfileRepository, users.get("williams"), "Robert", "Williams", "123-555-1004", "Director of Radiology with focus on advanced imaging techniques.");
-        createUserProfile(userProfileRepository, users.get("thompson"), "Lisa", "Thompson", "123-555-1005", "Neurologist specializing in stroke treatment and rehabilitation.");
         
-        createUserProfile(userProfileRepository, users.get("smith"), "John", "Smith", "123-555-2001", "Third-year medical student interested in cardiology.");
-        createUserProfile(userProfileRepository, users.get("brown"), "Maria", "Brown", "123-555-2002", "Fourth-year medical student planning to specialize in orthopedic surgery.");
-        createUserProfile(userProfileRepository, users.get("patel"), "Raj", "Patel", "123-555-2003", "Second-year medical student with interest in pediatric oncology.");
-        createUserProfile(userProfileRepository, users.get("garcia"), "Sofia", "Garcia", "123-555-2004", "Third-year medical student focusing on internal medicine and infectious diseases.");
-        createUserProfile(userProfileRepository, users.get("kim"), "David", "Kim", "123-555-2005", "Fourth-year medical student pursuing a career in interventional radiology.");
-        createUserProfile(userProfileRepository, users.get("miller"), "James", "Miller", "123-555-2006", "Second-year medical student interested in neurosurgery.");
-        createUserProfile(userProfileRepository, users.get("wilson"), "Emma", "Wilson", "123-555-2007", "Third-year medical student with focus on pediatric emergency medicine.");
-        createUserProfile(userProfileRepository, users.get("davis"), "Alex", "Davis", "123-555-2008", "Fourth-year medical student planning to specialize in plastic surgery.");
-        createUserProfile(userProfileRepository, users.get("jones"), "Olivia", "Jones", "123-555-2009", "Second-year medical student interested in neuropsychiatry.");
-        createUserProfile(userProfileRepository, users.get("lee"), "Daniel", "Lee", "123-555-2010", "Third-year medical student focusing on diagnostic radiology and nuclear medicine.");
+        // Updated user references to match what's in initUsers
+        createUserProfile(userProfileRepository, users.get("janeSmith"), "Jane", "Smith", "123-555-1001", "Professor of Internal Medicine with 15 years of clinical experience. Research focus on cardiovascular health.");
+        createUserProfile(userProfileRepository, users.get("davidChen"), "David", "Chen", "123-555-1002", "Chief of Surgery with specialization in minimally invasive procedures.");
+        createUserProfile(userProfileRepository, users.get("mariaGarcia"), "Maria", "Garcia", "123-555-1003", "Pediatric specialist with expertise in developmental disorders.");
+        createUserProfile(userProfileRepository, users.get("thomasWhite"), "Thomas", "White", "123-555-1004", "Director of Radiology with focus on advanced imaging techniques.");
+        
+        // Student profiles - using actual keys from initUsers
+        createUserProfile(userProfileRepository, users.get("studentJohn"), "John", "Smith", "123-555-2001", "Third-year medical student interested in cardiology.");
+        createUserProfile(userProfileRepository, users.get("studentJane"), "Jane", "Alpha", "123-555-2002", "Fourth-year medical student planning to specialize in orthopedic surgery.");
+        createUserProfile(userProfileRepository, users.get("smith"), "John", "Smith", "123-555-2003", "Second-year medical student with interest in pediatric oncology.");
+        createUserProfile(userProfileRepository, users.get("brown"), "Maria", "Brown", "123-555-2004", "Third-year medical student focusing on internal medicine and infectious diseases.");
         
         log.info("Successfully created user profiles");
     } catch (Exception e) {
         log.error("Error creating user profiles: " + e.getMessage(), e);
-    }
-}
-
-@Transactional(propagation = Propagation.REQUIRES_NEW)
-private void initAnswerOptions(AnswerOptionRepository answerOptionRepository, Map<String, Question> questions) {
-    log.info("Creating answer options...");
-    
-    try {
-        // Answer options for q1
-        createAnswerOption(answerOptionRepository, "Scaphoid", false, "The scaphoid is one of the carpal bones.", 1, questions.get("q1"));
-        createAnswerOption(answerOptionRepository, "Lunate", false, "The lunate is one of the carpal bones.", 2, questions.get("q1"));
-        createAnswerOption(answerOptionRepository, "Metacarpal", true, "Correct! Metacarpals are the bones in the hand, not the wrist.", 3, questions.get("q1"));
-        createAnswerOption(answerOptionRepository, "Pisiform", false, "The pisiform is one of the carpal bones.", 4, questions.get("q1"));
-        
-        // Answer options for q2
-        createAnswerOption(answerOptionRepository, "Pelvis", true, "Correct! The femur articulates with the acetabulum of the pelvis.", 1, questions.get("q2"));
-        createAnswerOption(answerOptionRepository, "Tibia", true, "Correct! The femur articulates with the tibia at the knee joint.", 2, questions.get("q2"));
-        createAnswerOption(answerOptionRepository, "Fibula", false, "The fibula does not directly articulate with the femur.", 3, questions.get("q2"));
-        createAnswerOption(answerOptionRepository, "Patella", false, "The patella is a sesamoid bone within the quadriceps tendon that articulates with the femur but is not considered a primary articulation.", 4, questions.get("q2"));
-        
-        // Answer options for q3
-        createAnswerOption(answerOptionRepository, "Humerus", false, "The biceps brachii originates on the scapula, not the humerus.", 1, questions.get("q3"));
-        createAnswerOption(answerOptionRepository, "Scapula", true, "Correct! The biceps brachii has two heads that originate on the scapula.", 2, questions.get("q3"));
-        createAnswerOption(answerOptionRepository, "Radius", false, "The radius is where the biceps brachii inserts, not where it originates.", 3, questions.get("q3"));
-        createAnswerOption(answerOptionRepository, "Ulna", false, "The biceps brachii does not originate on the ulna.", 4, questions.get("q3"));
-        
-        // Answer options for q4
-        createAnswerOption(answerOptionRepository, "2", false, "The human heart has 4 chambers, not 2.", 1, questions.get("q4"));
-        createAnswerOption(answerOptionRepository, "3", false, "The human heart has 4 chambers, not 3.", 2, questions.get("q4"));
-        createAnswerOption(answerOptionRepository, "4", true, "Correct! The human heart has 4 chambers: right atrium, right ventricle, left atrium, and left ventricle.", 3, questions.get("q4"));
-        createAnswerOption(answerOptionRepository, "5", false, "The human heart has 4 chambers, not 5.", 4, questions.get("q4"));
-        
-        // Answer options for q5 (essay question)
-        createAnswerOption(answerOptionRepository, "The blood-brain barrier is a highly selective semipermeable border of endothelial cells that prevents solutes in the circulating blood from non-selectively crossing into the extracellular fluid of the central nervous system where neurons reside. It is formed by brain endothelial cells connected by tight junctions and serves to protect the brain from pathogens, toxins, and hormones while allowing essential nutrients to pass through.", true, "Key points to include: selective permeability, endothelial cells, tight junctions, protection of CNS, allowing nutrients to pass.", 1, questions.get("q5"));
-        
-        // Answer options for cardiology questions
-        createAnswerOption(answerOptionRepository, "Ventricular depolarization", false, "Ventricular depolarization is represented by the QRS complex.", 1, questions.get("cq1"));
-        createAnswerOption(answerOptionRepository, "Atrial depolarization", true, "Correct! The P wave represents atrial depolarization.", 2, questions.get("cq1"));
-        createAnswerOption(answerOptionRepository, "Ventricular repolarization", false, "Ventricular repolarization is represented by the T wave.", 3, questions.get("cq1"));
-        createAnswerOption(answerOptionRepository, "Atrial repolarization", false, "Atrial repolarization is usually obscured by the QRS complex.", 4, questions.get("cq1"));
-        
-        createAnswerOption(answerOptionRepository, "ACE inhibitors", false, "ACE inhibitors are commonly used to treat heart failure.", 1, questions.get("cq2"));
-        createAnswerOption(answerOptionRepository, "Beta-blockers", false, "Beta-blockers are commonly used to treat heart failure.", 2, questions.get("cq2"));
-        createAnswerOption(answerOptionRepository, "Warfarin", true, "Correct! Warfarin is an anticoagulant, not a primary heart failure medication.", 3, questions.get("cq2"));
-        createAnswerOption(answerOptionRepository, "Diuretics", false, "Diuretics are commonly used to treat heart failure.", 4, questions.get("cq2"));
-        
-        log.info("Successfully created answer options");
-    } catch (Exception e) {
-        log.error("Error creating answer options: " + e.getMessage(), e);
-    }
-}
-
-@Transactional(propagation = Propagation.REQUIRES_NEW)
-private Map<String, QuizAttempt> initQuizAttempts(QuizAttemptRepository quizAttemptRepository, Map<String, Quiz> quizzes, Map<String, User> users) {
-    log.info("Creating quiz attempts...");
-    Map<String, QuizAttempt> attempts = new HashMap<>();
-    
-    try {
-        // Create quiz attempts
-        QuizAttempt smithAnatomyAttempt = createQuizAttempt(quizAttemptRepository, quizzes.get("anatomyQuiz"), 
-            users.get("smith"), LocalDateTime.now().minusDays(39).plusHours(1), 
-            LocalDateTime.now().minusDays(39).plusHours(2), 80.0, 80.0, true, AttemptStatus.COMPLETED);
-        
-        QuizAttempt brownAnatomyAttempt = createQuizAttempt(quizAttemptRepository, quizzes.get("anatomyQuiz"), 
-            users.get("brown"), LocalDateTime.now().minusDays(39).plusHours(2), 
-            LocalDateTime.now().minusDays(39).plusHours(3), 85.0, 85.0, true, AttemptStatus.COMPLETED);
-        
-        QuizAttempt garciaAnatomyAttempt = createQuizAttempt(quizAttemptRepository, quizzes.get("anatomyQuiz"), 
-            users.get("garcia"), LocalDateTime.now().minusDays(39).plusHours(3), 
-            LocalDateTime.now().minusDays(39).plusHours(4), 65.0, 65.0, false, AttemptStatus.COMPLETED);
-        
-        attempts.put("smithAnatomyAttempt", smithAnatomyAttempt);
-        attempts.put("brownAnatomyAttempt", brownAnatomyAttempt);
-        attempts.put("garciaAnatomyAttempt", garciaAnatomyAttempt);
-        
-        log.info("Successfully created {} quiz attempts", attempts.size());
-    } catch (Exception e) {
-        log.error("Error creating quiz attempts: " + e.getMessage(), e);
-    }
-    
-    return attempts;
-}
-
-@Transactional(propagation = Propagation.REQUIRES_NEW)
-private void initStudentAnswers(StudentAnswerRepository studentAnswerRepository, Map<String, QuizAttempt> attempts, 
-                              Map<String, Question> questions, AnswerOptionRepository answerOptionRepository) {
-    log.info("Creating student answers...");
-    
-    try {
-        // Create student answers for Smith's anatomy quiz attempt
-        createStudentAnswer(studentAnswerRepository, attempts.get("smithAnatomyAttempt"), questions.get("q1"), 
-            List.of(answerOptionRepository.findByQuestionIdOrderByOrderIndexAsc(questions.get("q1").getId()).get(2)), 
-            null, 5.0, true, false, null);
-        
-        createStudentAnswer(studentAnswerRepository, attempts.get("smithAnatomyAttempt"), questions.get("q2"), 
-            List.of(answerOptionRepository.findByQuestionIdOrderByOrderIndexAsc(questions.get("q2").getId()).get(0), 
-                   answerOptionRepository.findByQuestionIdOrderByOrderIndexAsc(questions.get("q2").getId()).get(1)), 
-            null, 5.0, true, false, null);
-        
-        createStudentAnswer(studentAnswerRepository, attempts.get("smithAnatomyAttempt"), questions.get("q3"), 
-            List.of(answerOptionRepository.findByQuestionIdOrderByOrderIndexAsc(questions.get("q3").getId()).get(1)), 
-            null, 5.0, true, false, null);
-        
-        createStudentAnswer(studentAnswerRepository, attempts.get("smithAnatomyAttempt"), questions.get("q4"), 
-            List.of(answerOptionRepository.findByQuestionIdOrderByOrderIndexAsc(questions.get("q4").getId()).get(2)), 
-            null, 5.0, true, false, null);
-        
-        createStudentAnswer(studentAnswerRepository, attempts.get("smithAnatomyAttempt"), questions.get("q5"), 
-            List.of(), 
-            "The blood-brain barrier is a protective mechanism that prevents harmful substances from entering the brain while allowing necessary nutrients to pass through. It consists of tightly packed endothelial cells that form the walls of brain capillaries, with tight junctions between them that restrict passage of most molecules.", 
-            8.0, true, true, "Good explanation of the structure and function, but could include more details about the specific transport mechanisms.");
-        
-        log.info("Successfully created student answers");
-    } catch (Exception e) {
-        log.error("Error creating student answers: " + e.getMessage(), e);
     }
 }
 
@@ -859,24 +881,24 @@ private Map<String, Assignment> initAssignments(AssignmentRepository assignmentR
     Map<String, Assignment> assignments = new HashMap<>();
     
     try {
-        Assignment anatomyAssignment = createAssignment(assignmentRepository, courses.get("anatomy"), 
-            "Skeletal System Diagram", 
-            "Create a detailed diagram of the human skeletal system, labeling all major bones and joints. Include a brief description of the function of each bone group.", 
-            LocalDateTime.now().minusDays(50), 100);
+        // Check if course exists before accessing it
+        if (courses.get("anatomyPhysiology") != null) {
+            Assignment anatomyAssignment = createAssignment(assignmentRepository, courses.get("anatomyPhysiology").getId(), 
+                "Skeletal System Diagram", 
+                "Create a detailed diagram of the human skeletal system, labeling all major bones and joints. Include a brief description of the function of each bone group.", 
+                LocalDateTime.now().minusDays(50), 100);
+            assignments.put("anatomyAssignment", anatomyAssignment);
+        }
         
-        Assignment cardiologyAssignment = createAssignment(assignmentRepository, courses.get("cardiology"), 
-            "ECG Analysis Case Study", 
-            "Analyze the provided ECG tracings and identify the cardiac abnormalities present. Provide a clinical interpretation and suggested treatment approach for each case.", 
-            LocalDateTime.now().minusDays(15), 100);
-        
-        Assignment neurologyAssignment = createAssignment(assignmentRepository, courses.get("neurologicalDisorders"), 
-            "Neurological Case Report", 
-            "Write a detailed case report on a patient with a neurological disorder of your choice. Include pathophysiology, clinical presentation, diagnostic approach, and treatment plan.", 
-            LocalDateTime.now().minusDays(25), 100);
-        
-        assignments.put("anatomyAssignment", anatomyAssignment);
-        assignments.put("cardiologyAssignment", cardiologyAssignment);
-        assignments.put("neurologyAssignment", neurologyAssignment);
+        // Only add additional assignments for courses that exist
+        // Add a biochemistry assignment since we know that course exists
+        if (courses.get("biochemistry") != null) {
+            Assignment biochemistryAssignment = createAssignment(assignmentRepository, courses.get("biochemistry").getId(),
+                "Enzyme Activity Lab Report",
+                "Complete a lab report on enzyme activity based on the experiments performed in lab session 3. Include methodology, results, and discussion sections.",
+                LocalDateTime.now().minusDays(20), 100);
+            assignments.put("biochemistryAssignment", biochemistryAssignment);
+        }
         
         log.info("Successfully created {} assignments", assignments.size());
     } catch (Exception e) {
@@ -891,39 +913,23 @@ private void initScores(ScoreRepository scoreRepository, Map<String, User> users
     log.info("Creating assignment scores...");
     
     try {
-        createScore(scoreRepository, users.get("smith").getId(), assignments.get("anatomyAssignment").getId(), 92, LocalDateTime.now().minusDays(45));
-        createScore(scoreRepository, users.get("brown").getId(), assignments.get("anatomyAssignment").getId(), 88, LocalDateTime.now().minusDays(44));
-        createScore(scoreRepository, users.get("patel").getId(), assignments.get("anatomyAssignment").getId(), 95, LocalDateTime.now().minusDays(46));
-        createScore(scoreRepository, users.get("garcia").getId(), assignments.get("anatomyAssignment").getId(), 78, LocalDateTime.now().minusDays(45));
-        createScore(scoreRepository, users.get("smith").getId(), assignments.get("cardiologyAssignment").getId(), 85, LocalDateTime.now().minusDays(10));
-        createScore(scoreRepository, users.get("jones").getId(), assignments.get("neurologyAssignment").getId(), 90, LocalDateTime.now().minusDays(20));
+        // Only create scores for users and assignments that exist
+        if (users.get("smith") != null && assignments.get("anatomyAssignment") != null) {
+            createScore(scoreRepository, users.get("smith").getId(), assignments.get("anatomyAssignment").getId(), 92, LocalDateTime.now().minusDays(45));
+        }
+        
+        if (users.get("brown") != null && assignments.get("anatomyAssignment") != null) {
+            createScore(scoreRepository, users.get("brown").getId(), assignments.get("anatomyAssignment").getId(), 88, LocalDateTime.now().minusDays(44));
+        }
+        
+        // Add more score entries with null checks
+        if (users.get("studentJohn") != null && assignments.get("biochemistryAssignment") != null) {
+            createScore(scoreRepository, users.get("studentJohn").getId(), assignments.get("biochemistryAssignment").getId(), 85, LocalDateTime.now().minusDays(10));
+        }
         
         log.info("Successfully created assignment scores");
     } catch (Exception e) {
         log.error("Error creating assignment scores: " + e.getMessage(), e);
-    }
-}
-
-@Transactional(propagation = Propagation.REQUIRES_NEW)
-private void initSubmissions(SubmissionRepository submissionRepository, Map<String, Assignment> assignments, Map<String, User> users) {
-    log.info("Creating assignment submissions...");
-    
-    try {
-        createSubmission(submissionRepository, assignments.get("anatomyAssignment").getId(), users.get("smith").getId(), 
-            "smith_anatomy_assignment.pdf", LocalDateTime.now().minusDays(48));
-        
-        createSubmission(submissionRepository, assignments.get("anatomyAssignment").getId(), users.get("brown").getId(), 
-            "brown_anatomy_assignment.pdf", LocalDateTime.now().minusDays(49));
-        
-        createSubmission(submissionRepository, assignments.get("cardiologyAssignment").getId(), users.get("smith").getId(), 
-            "smith_cardiology_assignment.pdf", LocalDateTime.now().minusDays(12));
-        
-        createSubmission(submissionRepository, assignments.get("neurologyAssignment").getId(), users.get("jones").getId(), 
-            "jones_neurology_assignment.pdf", LocalDateTime.now().minusDays(22));
-        
-        log.info("Successfully created assignment submissions");
-    } catch (Exception e) {
-        log.error("Error creating assignment submissions: " + e.getMessage(), e);
     }
 }
 
@@ -933,18 +939,18 @@ private Map<String, ForumThread> initForumThreads(ForumThreadRepository forumThr
     Map<String, ForumThread> threads = new HashMap<>();
     
     try {
-        ForumThread anatomyThread = createForumThread(forumThreadRepository, courses.get("anatomy").getId(), 
-            "Difficulty understanding joint classifications", users.get("smith").getId(), LocalDateTime.now().minusDays(52));
+        // Only create threads for courses that exist
+        if (courses.get("anatomyPhysiology") != null && users.get("studentJohn") != null) {
+            ForumThread anatomyThread = createForumThread(forumThreadRepository, courses.get("anatomyPhysiology").getId(), 
+                "Difficulty understanding joint classifications", users.get("studentJohn").getId(), LocalDateTime.now().minusDays(52));
+            threads.put("anatomyThread", anatomyThread);
+        }
         
-        ForumThread cardiologyThread = createForumThread(forumThreadRepository, courses.get("cardiology").getId(), 
-            "Question about heart valve sounds", users.get("garcia").getId(), LocalDateTime.now().minusDays(25));
-        
-        ForumThread pediatricsThread = createForumThread(forumThreadRepository, courses.get("pediatricCare").getId(), 
-            "Developmental milestones reference", users.get("wilson").getId(), LocalDateTime.now().minusDays(35));
-        
-        threads.put("anatomyThread", anatomyThread);
-        threads.put("cardiologyThread", cardiologyThread);
-        threads.put("pediatricsThread", pediatricsThread);
+        if (courses.get("biochemistry") != null && users.get("studentJane") != null) {
+            ForumThread biochemThread = createForumThread(forumThreadRepository, courses.get("biochemistry").getId(), 
+                "Question about enzyme kinetics", users.get("studentJane").getId(), LocalDateTime.now().minusDays(25));
+            threads.put("biochemThread", biochemThread);
+        }
         
         log.info("Successfully created {} forum threads", threads.size());
     } catch (Exception e) {
@@ -959,48 +965,21 @@ private void initForumPosts(ForumPostRepository forumPostRepository, Map<String,
     log.info("Creating forum posts...");
     
     try {
-        // Anatomy thread posts
-        createForumPost(forumPostRepository, threads.get("anatomyThread").getId(), users.get("smith").getId(), 
-            "I'm having trouble understanding the classification of joints, particularly the difference between functional and structural classifications. Can someone explain this in simpler terms?", 
-            LocalDateTime.now().minusDays(52));
+        // Add null checks for all references
+        if (threads.get("anatomyThread") != null && users.get("studentJohn") != null) {
+            // Anatomy thread posts
+            createForumPost(forumPostRepository, threads.get("anatomyThread").getId(), users.get("studentJohn").getId(), 
+                "I'm having trouble understanding the classification of joints, particularly the difference between functional and structural classifications. Can someone explain this in simpler terms?", 
+                LocalDateTime.now().minusDays(52));
+        }
         
-        createForumPost(forumPostRepository, threads.get("anatomyThread").getId(), users.get("johnson").getId(), 
-            "Great question! Structural classification refers to how the joints are physically connected (fibrous, cartilaginous, synovial), while functional classification refers to how much movement they allow (synarthrosis, amphiarthrosis, diarthrosis). For example, a suture in the skull is structurally fibrous and functionally a synarthrosis (immovable).", 
-            LocalDateTime.now().minusDays(51));
+        if (threads.get("anatomyThread") != null && users.get("janeSmith") != null) {
+            createForumPost(forumPostRepository, threads.get("anatomyThread").getId(), users.get("janeSmith").getId(), 
+                "Great question! Structural classification refers to how the joints are physically connected (fibrous, cartilaginous, synovial), while functional classification refers to how much movement they allow (synarthrosis, amphiarthrosis, diarthrosis). For example, a suture in the skull is structurally fibrous and functionally a synarthrosis (immovable).", 
+                LocalDateTime.now().minusDays(51));
+        }
         
-        createForumPost(forumPostRepository, threads.get("anatomyThread").getId(), users.get("brown").getId(), 
-            "I found this helpful diagram showing examples of each type: [link to diagram]. It really helped me understand the differences.", 
-            LocalDateTime.now().minusDays(50));
-        
-        createForumPost(forumPostRepository, threads.get("anatomyThread").getId(), users.get("smith").getId(), 
-            "Thank you both! That clarifies it for me. @Dr. Johnson, do we need to know specific examples of each type for the exam?", 
-            LocalDateTime.now().minusDays(49));
-        
-        createForumPost(forumPostRepository, threads.get("anatomyThread").getId(), users.get("johnson").getId(), 
-            "Yes, you should be familiar with common examples of each type. Review the examples in Chapter 8 and the lab slides from week 3.", 
-            LocalDateTime.now().minusDays(48));
-        
-        // Cardiology thread posts
-        createForumPost(forumPostRepository, threads.get("cardiologyThread").getId(), users.get("garcia").getId(), 
-            "I'm confused about the difference between S1 and S2 heart sounds. How can you distinguish them when auscultating?", 
-            LocalDateTime.now().minusDays(25));
-        
-        createForumPost(forumPostRepository, threads.get("cardiologyThread").getId(), users.get("johnson").getId(), 
-            "S1 ('lub') is caused by closure of the mitral and tricuspid valves at the beginning of systole, while S2 ('dub') is caused by closure of the aortic and pulmonary valves at the beginning of diastole. S1 is usually louder at the apex of the heart, while S2 is louder at the base. Also, S1 is generally longer and lower pitched than S2.", 
-            LocalDateTime.now().minusDays(24));
-        
-        // Pediatrics thread posts
-        createForumPost(forumPostRepository, threads.get("pediatricsThread").getId(), users.get("wilson").getId(), 
-            "Does anyone have a good reference chart for developmental milestones? I'm finding conflicting information in different sources.", 
-            LocalDateTime.now().minusDays(35));
-        
-        createForumPost(forumPostRepository, threads.get("pediatricsThread").getId(), users.get("rodriguez").getId(), 
-            "The CDC has an excellent reference guide that we use in clinical practice. I'll upload it to the course resources section. Remember that these are guidelines and there's normal variation in development.", 
-            LocalDateTime.now().minusDays(34));
-        
-        createForumPost(forumPostRepository, threads.get("pediatricsThread").getId(), users.get("patel").getId(), 
-            "I've found the WHO growth charts to be reliable as well, especially for global comparisons.", 
-            LocalDateTime.now().minusDays(33));
+        // Add more forum posts with proper references
         
         log.info("Successfully created forum posts");
     } catch (Exception e) {
@@ -1014,30 +993,22 @@ private void initNotifications(NotificationRepository notificationRepository, Ma
     log.info("Creating notifications...");
     
     try {
-        createNotification(notificationRepository, NotificationType.COURSE_CONTENT_UPLOAD, users.get("smith"), 
-            "New Content: Heart Anatomy", 
-            "New content has been added to your course: Cardiovascular Medicine", 
-            courses.get("cardiology").getId(), "course");
+        // Only create notifications for entities that exist
+        if (users.get("studentJohn") != null && courses.get("biochemistry") != null) {
+            createNotification(notificationRepository, NotificationType.COURSE_CONTENT_UPLOAD, users.get("studentJohn"), 
+                "New Content: Enzyme Kinetics", 
+                "New content has been added to your course: Biochemistry Fundamentals", 
+                courses.get("biochemistry").getId(), "course");
+        }
         
-        createNotification(notificationRepository, NotificationType.ASSIGNMENT_DEADLINE_24H, users.get("smith"), 
-            "Assignment Due in 24 Hours", 
-            "Your assignment 'ECG Analysis Case Study' is due soon.", 
-            assignments.get("cardiologyAssignment").getId(), "assignment");
+        if (users.get("studentJohn") != null && assignments.get("anatomyAssignment") != null) {
+            createNotification(notificationRepository, NotificationType.ASSIGNMENT_DEADLINE_24H, users.get("studentJohn"), 
+                "Assignment Due in 24 Hours", 
+                "Your assignment 'Skeletal System Diagram' is due soon.", 
+                assignments.get("anatomyAssignment").getId(), "assignment");
+        }
         
-        createNotification(notificationRepository, NotificationType.QUIZ_AVAILABLE, users.get("brown"), 
-            "New Quiz Available: Human Anatomy Midterm", 
-            "A new quiz is available in your course: Human Anatomy Fundamentals", 
-            quizzes.get("anatomyQuiz").getId(), "quiz");
-        
-        createNotification(notificationRepository, NotificationType.FORUM_REPLY, users.get("garcia"), 
-            "New Reply to Your Forum Post", 
-            "Dr. Sarah Johnson replied to your post: \"I'm confused about the difference between S1 and S2 heart sounds...\"", 
-            threads.get("cardiologyThread").getId(), "forumPost");
-        
-        createNotification(notificationRepository, NotificationType.GRADE_POSTED, users.get("smith"), 
-            "Grade Posted: Skeletal System Diagram", 
-            "Your grade for Skeletal System Diagram in Human Anatomy Fundamentals has been posted.", 
-            assignments.get("anatomyAssignment").getId(), "assignment");
+        // Add more notifications with null checks
         
         log.info("Successfully created notifications");
     } catch (Exception e) {
@@ -1050,17 +1021,21 @@ private void initNotificationPreferences(NotificationPreferenceRepository notifi
     log.info("Creating notification preferences...");
     
     try {
-        createNotificationPreference(notificationPreferenceRepository, users.get("smith"), NotificationType.COURSE_CONTENT_UPLOAD, true, true);
-        createNotificationPreference(notificationPreferenceRepository, users.get("smith"), NotificationType.ASSIGNMENT_DEADLINE_24H, true, true);
-        createNotificationPreference(notificationPreferenceRepository, users.get("smith"), NotificationType.QUIZ_AVAILABLE, true, true);
-        createNotificationPreference(notificationPreferenceRepository, users.get("smith"), NotificationType.FORUM_REPLY, true, true);
-        createNotificationPreference(notificationPreferenceRepository, users.get("smith"), NotificationType.GRADE_POSTED, true, true);
+        // Only create preferences for users that exist
+        if (users.get("studentJohn") != null) {
+            createNotificationPreference(notificationPreferenceRepository, users.get("studentJohn"), NotificationType.COURSE_CONTENT_UPLOAD, true, true);
+            createNotificationPreference(notificationPreferenceRepository, users.get("studentJohn"), NotificationType.ASSIGNMENT_DEADLINE_24H, true, true);
+            createNotificationPreference(notificationPreferenceRepository, users.get("studentJohn"), NotificationType.QUIZ_AVAILABLE, true, true);
+            createNotificationPreference(notificationPreferenceRepository, users.get("studentJohn"), NotificationType.FORUM_REPLY, true, true);
+            createNotificationPreference(notificationPreferenceRepository, users.get("studentJohn"), NotificationType.GRADE_POSTED, true, true);
+        }
         
-        createNotificationPreference(notificationPreferenceRepository, users.get("brown"), NotificationType.COURSE_CONTENT_UPLOAD, true, false);
-        createNotificationPreference(notificationPreferenceRepository, users.get("brown"), NotificationType.ASSIGNMENT_DEADLINE_24H, true, true);
+        if (users.get("studentJane") != null) {
+            createNotificationPreference(notificationPreferenceRepository, users.get("studentJane"), NotificationType.COURSE_CONTENT_UPLOAD, true, false);
+            createNotificationPreference(notificationPreferenceRepository, users.get("studentJane"), NotificationType.ASSIGNMENT_DEADLINE_24H, true, true);
+        }
         
-        createNotificationPreference(notificationPreferenceRepository, users.get("patel"), NotificationType.FORUM_REPLY, true, true);
-        createNotificationPreference(notificationPreferenceRepository, users.get("patel"), NotificationType.GRADE_POSTED, true, false);
+        // Remove references to non-existent users like "patel"
         
         log.info("Successfully created notification preferences");
     } catch (Exception e) {
@@ -1073,14 +1048,16 @@ private void initCertificates(CertificateRepository certificateRepository, Map<S
     log.info("Creating certificates...");
     
     try {
-        createCertificate(certificateRepository, users.get("smith").getId(), courses.get("anatomy").getId(), 
-            "certificate_smith_anatomy.pdf", LocalDateTime.now().minusDays(14), "Human Anatomy Fundamentals");
+        // Only create certificates for users and courses that exist
+        if (users.get("studentJohn") != null && courses.get("anatomyPhysiology") != null) {
+            createCertificate(certificateRepository, users.get("studentJohn").getId(), courses.get("anatomyPhysiology").getId(), 
+                "certificate_john_anatomy.pdf", LocalDateTime.now().minusDays(14), "Human Anatomy & Physiology");
+        }
         
-        createCertificate(certificateRepository, users.get("brown").getId(), courses.get("anatomy").getId(), 
-            "certificate_brown_anatomy.pdf", LocalDateTime.now().minusDays(12), "Human Anatomy Fundamentals");
-        
-        createCertificate(certificateRepository, users.get("patel").getId(), courses.get("anatomy").getId(), 
-            "certificate_patel_anatomy.pdf", LocalDateTime.now().minusDays(11), "Human Anatomy Fundamentals");
+        if (users.get("studentJane") != null && courses.get("biochemistry") != null) {
+            createCertificate(certificateRepository, users.get("studentJane").getId(), courses.get("biochemistry").getId(), 
+                "certificate_jane_biochem.pdf", LocalDateTime.now().minusDays(12), "Biochemistry Fundamentals");
+        }
         
         log.info("Successfully created certificates");
     } catch (Exception e) {
@@ -1366,9 +1343,10 @@ private void initCertificates(CertificateRepository certificateRepository, Map<S
         return repository.save(answer);
     }
     @Transactional (propagation = Propagation.REQUIRES_NEW)
-    private Assignment createAssignment(AssignmentRepository repository, Course course, String title, String description, LocalDateTime dueDate, Integer maxScore) {
+    private Assignment createAssignment(AssignmentRepository repository, Long courseId, String title, 
+                                  String description, LocalDateTime dueDate, Integer maxScore) {
         Assignment assignment = new Assignment();
-        assignment.setCourseId(course.getId());
+        assignment.setCourseId(courseId);
         assignment.setTitle(title);
         assignment.setDescription(description);
         assignment.setDueDate(dueDate);
@@ -1466,4 +1444,22 @@ private void initCertificates(CertificateRepository certificateRepository, Map<S
                 .build();
         return repository.save(certificate);
     }
+
+@Transactional(propagation = Propagation.REQUIRES_NEW)
+private User createDummyStudent(UserRepository repository, String email, String fullName, 
+                              String password, Role role) {
+    User user = User.builder()
+            .email(email)
+            .fullName(fullName)
+            .password(passwordEncoder.encode(password))
+            .isActive(true)
+            .tokenVersion(0L)
+            .build();
+    
+    Set<Role> roles = new HashSet<>();
+    roles.add(role);
+    user.setRoles(roles);
+    
+    return repository.save(user);
+}
 }

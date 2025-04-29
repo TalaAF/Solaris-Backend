@@ -5,7 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Data
 @AllArgsConstructor
@@ -18,13 +19,47 @@ public class AuthResponse {
     private UserInfo user;
     
     // For backward compatibility, you can keep the constructor
-    public AuthResponse(String accessToken, String tokenId, Long userId, String email, String roles) {
+    public AuthResponse(String accessToken, String tokenId, Long userId, String email, String roleNames) {
         this.token = accessToken;
         // Create a basic user info object
         this.user = new UserInfo();
         this.user.setId(userId);
         this.user.setEmail(email);
-        // You'll need to parse roles string into set
+        
+        // Parse roles string into set of Role objects
+        if (roleNames != null && !roleNames.isEmpty()) {
+            Set<Role> roles = Arrays.stream(roleNames.split(","))
+                .map(roleName -> {
+                    Role role = new Role();
+                    role.setName(roleName.trim());
+                    return role;
+                })
+                .collect(Collectors.toSet());
+            this.user.setRoles(roles);
+        }
+    }
+    
+    // Add a new constructor that includes all fields
+    public AuthResponse(String accessToken, String tokenId, Long userId, String email, 
+                       String fullName, String roleNames, String profilePicture) {
+        this.token = accessToken;
+        this.user = new UserInfo();
+        this.user.setId(userId);
+        this.user.setEmail(email);
+        this.user.setName(fullName);
+        this.user.setProfileImage(profilePicture);
+        
+        // Parse roles string into set of Role objects
+        if (roleNames != null && !roleNames.isEmpty()) {
+            Set<Role> roles = Arrays.stream(roleNames.split(","))
+                .map(roleName -> {
+                    Role role = new Role();
+                    role.setName(roleName.trim());
+                    return role;
+                })
+                .collect(Collectors.toSet());
+            this.user.setRoles(roles);
+        }
     }
     
     // Nested class for user information

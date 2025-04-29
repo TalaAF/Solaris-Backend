@@ -46,7 +46,22 @@ private String code;
     @ManyToOne
     @JoinColumn(name = "instructor_id", nullable = false)
     private User instructor;
+    @Column
+    private String status;
+    
+@Column
+private String imageUrl;
 
+// "in-progress", "upcoming", "completed"
+
+@Column
+private String grade; // Final grade for completed courses
+
+@Column
+private String semester;
+
+@Column
+private Integer credits;
     @ManyToMany
     @JoinTable(
         name = "course_students", 
@@ -97,8 +112,7 @@ private String code;
     private Integer creditHours;
     private String academicLevel;
     
-    @Enumerated(EnumType.STRING)
-    private CourseStatus status = CourseStatus.DRAFT;
+   
 
     // Inverse relationship with content
     @JsonIgnore
