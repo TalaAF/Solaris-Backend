@@ -22,10 +22,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.CacheEvict;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import jakarta.persistence.criteria.Predicate;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.Map;
 
 @Service
 public class CourseService {
@@ -414,6 +421,63 @@ public List<CourseDTO> getCoursesWithProgress(Long userId) {
             })
             .collect(Collectors.toList());
 }
+    
+    /**
+     * Get courses with pagination and filtering
+     * 
+     * @param page Page number (0-based)
+     * @param size Page size
+     * @param sortBy Sort field
+     * @param sortDirection Sort direction (asc/desc)
+     * @param filters Filters map
+     * @return Page of course DTOs
+     */
+    @Transactional(readOnly = true)
+    public Page<CourseDTO> getCourses(int page, int size, String sortBy, String sortDirection, Map<String, Object> filters) {
+        Sort sort = Sort.by(sortDirection.equalsIgnoreCase("asc") ? 
+                Sort.Direction.ASC : Sort.Direction.DESC, sortBy);
+        Pageable pageable = PageRequest.of(page, size, sort);
+        
+        Specification<Course> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            
+            // Filter by title
+            if (filters.containsKey("title")) {
+                String title = (String) filters.get("title");
+                predicates.add(cb.like(cb.lower(root.get("title")), 
+                    "%" + title.toLowerCase() + "%"));
+            }
+            
+            // Filter by department
+            if (filters.containsKey("departmentId")) {
+                Long departmentId = (Long) filters.get("departmentId");
+                predicates.add(cb.equal(root.get("department").get("id"), departmentId));
+            }
+            
+            // Filter by instructor
+            if (filters.containsKey("instructorId")) {
+                Long instructorId = (Long) filters.get("instructorId");
+                predicates.add(cb.equal(root.get("instructor").get("id"), instructorId));
+            }
+            
+            // Filter by published status
+            if (filters.containsKey("published")) {
+                Boolean published = (Boolean) filters.get("published");
+                predicates.add(cb.equal(root.get("published"), published));
+            }
+            
+            // Filter by archived status
+            if (filters.containsKey("archived")) {
+                Boolean archived = (Boolean) filters.get("archived");
+                predicates.add(cb.equal(root.get("archived"), archived));
+            }
+            
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+        
+        Page<Course> coursePage = courseRepository.findAll(spec, pageable);
+        return coursePage.map(CourseMapper::toDTO);
+    }
     
     // Private methods
     
