@@ -10,7 +10,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -23,8 +26,18 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "Progress Visualization", description = "Operations for visualizing progress data")
 public class ProgressVisualizationController {
 
+    private static final Logger logger = LoggerFactory.getLogger(ProgressVisualizationController.class);
+
     @Autowired
     private ProgressVisualizationService progressVisualizationService;
+
+    /**
+     * Health check endpoint for testing API connectivity
+     */
+    @GetMapping("/health-check")
+    public ResponseEntity<String> healthCheck() {
+        return ResponseEntity.ok("Progress visualization API is operational");
+    }
 
     /**
      * Get overall progress for a student across all courses
@@ -50,12 +63,20 @@ public class ProgressVisualizationController {
         )
     })
     @PreAuthorize("hasRole('ADMIN') or hasRole('INSTRUCTOR') or (hasRole('STUDENT') and #studentId == authentication.principal.id)")
-    public ResponseEntity<Double> getOverallProgress(
+    public ResponseEntity<?> getOverallProgress(
             @Parameter(description = "ID of the student", required = true)
             @PathVariable Long studentId) {
         
-        Double overallProgress = progressVisualizationService.calculateOverallProgress(studentId);
-        return ResponseEntity.ok(overallProgress);
+        try {
+            logger.info("Fetching overall progress for student ID: {}", studentId);
+            Double overallProgress = progressVisualizationService.calculateOverallProgress(studentId);
+            logger.info("Returning overall progress for student ID {}: {}", studentId, overallProgress);
+            return ResponseEntity.ok(overallProgress);
+        } catch (Exception e) {
+            logger.error("Error fetching overall progress for student ID: " + studentId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ErrorResponse.builder().message("Error fetching overall progress: " + e.getMessage()).build());
+        }
     }
     
     /**
@@ -82,12 +103,21 @@ public class ProgressVisualizationController {
         )
     })
     @PreAuthorize("hasRole('ADMIN') or hasRole('INSTRUCTOR') or (hasRole('STUDENT') and #studentId == authentication.principal.id)")
-    public ResponseEntity<CourseProgressVisualizationDTO> getCourseProgressVisualization(
+    public ResponseEntity<?> getCourseProgressVisualization(
             @Parameter(description = "ID of the student", required = true)
             @PathVariable Long studentId) {
         
-        CourseProgressVisualizationDTO visualization = progressVisualizationService.getProgressVisualization(studentId);
-        return ResponseEntity.ok(visualization);
+        try {
+            logger.info("Fetching course progress visualization for student ID: {}", studentId);
+            CourseProgressVisualizationDTO visualization = progressVisualizationService.getProgressVisualization(studentId);
+            logger.info("Retrieved course progress for student ID: {}, with {} courses", 
+                    studentId, visualization.getCourses() != null ? visualization.getCourses().size() : 0);
+            return ResponseEntity.ok(visualization);
+        } catch (Exception e) {
+            logger.error("Error fetching course progress visualization for student ID: " + studentId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ErrorResponse.builder().message("Error fetching course progress: " + e.getMessage()).build());
+        }
     }
     
     /**
@@ -114,13 +144,20 @@ public class ProgressVisualizationController {
         )
     })
     @PreAuthorize("hasRole('ADMIN') or hasRole('INSTRUCTOR') or (hasRole('STUDENT') and #studentId == authentication.principal.id)")
-    public ResponseEntity<Object> getProgressByCategory(
+    public ResponseEntity<?> getProgressByCategory(
             @Parameter(description = "ID of the student", required = true)
             @PathVariable Long studentId) {
         
-        // This would be implemented in the service
-        // For now, we'll return a placeholder
-        return ResponseEntity.ok(java.util.Collections.singletonMap("status", "Not implemented yet"));
+        try {
+            logger.info("Fetching progress by category for student ID: {}", studentId);
+            // This would be implemented in the service
+            // For now, we'll return a placeholder
+            return ResponseEntity.ok(java.util.Collections.singletonMap("status", "Not implemented yet"));
+        } catch (Exception e) {
+            logger.error("Error fetching progress by category for student ID: " + studentId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ErrorResponse.builder().message("Error fetching progress by category: " + e.getMessage()).build());
+        }
     }
     
     /**
@@ -148,15 +185,22 @@ public class ProgressVisualizationController {
         )
     })
     @PreAuthorize("hasRole('ADMIN') or hasRole('INSTRUCTOR') or (hasRole('STUDENT') and #studentId == authentication.principal.id)")
-    public ResponseEntity<Object> getProgressTrend(
+    public ResponseEntity<?> getProgressTrend(
             @Parameter(description = "ID of the student", required = true)
             @PathVariable Long studentId,
             
             @Parameter(description = "Number of days to include in the trend (default: 30)")
             @RequestParam(required = false, defaultValue = "30") Integer days) {
         
-        // This would be implemented in the service
-        // For now, we'll return a placeholder
-        return ResponseEntity.ok(java.util.Collections.singletonMap("status", "Not implemented yet"));
+        try {
+            logger.info("Fetching progress trend for student ID: {} for the last {} days", studentId, days);
+            // This would be implemented in the service
+            // For now, we'll return a placeholder
+            return ResponseEntity.ok(java.util.Collections.singletonMap("status", "Not implemented yet"));
+        } catch (Exception e) {
+            logger.error("Error fetching progress trend for student ID: " + studentId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ErrorResponse.builder().message("Error fetching progress trend: " + e.getMessage()).build());
+        }
     }
 }
