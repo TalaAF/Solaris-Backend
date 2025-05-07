@@ -1,11 +1,11 @@
 package com.example.lms.enrollment.model;
 
 public enum EnrollmentStatus {
-    PENDING,     // Waiting for approval (if enrollment requires it)
-    APPROVED,    // Enrollment approved and active
+    PENDING,     // Waiting for approval
+    APPROVED,    // Enrollment approved and active (this will be "Registered")
     REJECTED,    // Enrollment was rejected
-    IN_PROGRESS, // Student is actively taking the course
-    COMPLETED,   // Course requirements are finished
+    IN_PROGRESS, // Student is actively taking the course (also "Registered")
+    COMPLETED,   // Course requirements are finished ("Completed")
     CANCELLED,   // Enrollment was cancelled
     EXPIRED      // Enrollment period has ended
 }

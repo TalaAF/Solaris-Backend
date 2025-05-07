@@ -111,7 +111,7 @@ private Integer credits;
     
     private Integer creditHours;
     private String academicLevel;
-    
+
    
 
     // Inverse relationship with content

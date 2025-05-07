@@ -78,7 +78,10 @@ public class CourseDTO extends RepresentationModel<CourseDTO> {
     private String instructorName; // Instructor name
     private Integer progress = 0; // Student progress in course (default 0)
     private List<ModuleDTO> modules; // List of modules in the course
-    
+// Course code (e.g., "SWER402")
+    private String courseType; // "Major Requirement", "Major Elective", etc.
+    private String status; // "In Progress", "Completed", "Available"
+    private String term;
     /**
      * Minimal constructor with essential fields
      */
