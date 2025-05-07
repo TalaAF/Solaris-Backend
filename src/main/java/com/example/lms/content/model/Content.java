@@ -79,6 +79,7 @@ public class Content {
 )
 private List<Tag> tags;
 private boolean isPublished = false;
+private boolean deleted = false;
 
 public void setIsPublished(boolean isPublished) {
     this.isPublished = isPublished;

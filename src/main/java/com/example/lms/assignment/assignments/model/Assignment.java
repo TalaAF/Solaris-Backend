@@ -1,30 +1,37 @@
 package com.example.lms.assignment.assignments.model;
 
+import com.example.lms.common.BaseEntity;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-@Entity
 @Data
+@Entity
 @Table(name = "assignments")
-public class Assignment {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(nullable = false)
-    private Long courseId;
-
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Assignment extends BaseEntity {
+    
     @Column(nullable = false)
     private String title;
-
+    
     @Column(columnDefinition = "TEXT")
     private String description;
-
+    
+    @Column
+    private LocalDateTime dueDate;
+    
     @Column(nullable = false)
     private Integer maxScore;
-
-    @Column(nullable = false) // Enforce NOT NULL at the JPA level
-    private LocalDateTime dueDate;
+    
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean published;
+    
+    @Column(nullable = false)
+    private Long courseId;
 }

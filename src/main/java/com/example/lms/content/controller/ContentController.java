@@ -290,4 +290,27 @@ public class ContentController {
             .contentType(MediaType.parseMediaType(content.getFileType()))
             .body(resource);
     }
+
+    // Add these endpoints
+    @PostMapping("/{id}/restore")
+    @Operation(summary = "Restore deleted content", description = "Restores content that was previously deleted")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Content restored successfully"),
+        @ApiResponse(responseCode = "404", description = "Content not found")
+    })
+    public ResponseEntity<Void> restoreContent(@PathVariable Long id) {
+        boolean restored = contentService.restoreContent(id);
+        if (restored) {
+            return ResponseEntity.ok().build();
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/deleted")
+    @Operation(summary = "Get deleted content", description = "Retrieves all soft-deleted content with pagination")
+    public ResponseEntity<Page<ContentDTO>> getDeletedContent(
+            Pageable pageable) {
+        return ResponseEntity.ok(contentService.getDeletedContents(pageable));
+    }
 }

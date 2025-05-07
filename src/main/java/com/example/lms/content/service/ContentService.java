@@ -158,6 +158,17 @@ public class ContentService {
     @Transactional
     public boolean deleteContent(Long id) {
         return contentRepository.findById(id).map(content -> {
+            // Instead of removing from database, mark as deleted
+            content.setDeleted(true);
+            contentRepository.save(content);
+            return true;
+        }).orElse(false);
+    }
+
+    // Add method to permanently delete content if needed
+    @Transactional
+    public boolean permanentlyDeleteContent(Long id) {
+        return contentRepository.findById(id).map(content -> {
             // Delete the associated file from storage
             fileStorageService.deleteFile(content.getFilePath());
             // Delete content from database
@@ -377,4 +388,21 @@ public Content updateContentDetails(Long id, String title, String description, B
         })
         .orElseThrow(() -> new ResourceNotFoundException("Content not found with id: " + id));
 }
+
+    // Add this method to ContentService
+    @Transactional
+    public boolean restoreContent(Long id) {
+        try {
+            contentRepository.restoreContent(id);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    // Add method to get deleted content
+    @Transactional(readOnly = true)
+    public Page<ContentDTO> getDeletedContents(Pageable pageable) {
+        return contentRepository.findDeleted(pageable).map(this::convertToDTO);
+    }
 }
