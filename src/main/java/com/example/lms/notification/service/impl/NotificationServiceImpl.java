@@ -114,4 +114,60 @@ public class NotificationServiceImpl implements NotificationService {
         
         notificationRepository.deleteById(notificationId);
     }
-}
+    
+    // New methods to implement notification categories
+    
+    @Override
+    @Transactional(readOnly = true)
+    public List<Notification> getNotificationsByCategory(Long userId, String category) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+        
+        if ("All".equalsIgnoreCase(category)) {
+            // For "All" category, return all notifications (with a reasonable limit)
+            Pageable pageable = PageRequest.of(0, 100, Sort.by("createdAt").descending());
+            return notificationRepository.findByUserOrderByCreatedAtDesc(user, pageable).getContent();
+        } else {
+            // For specific categories, use the repository method
+            return notificationRepository.findByUserAndCategory(user, category);
+        }
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public long getUnreadNotificationCountByCategory(Long userId, String category) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+        
+        if ("All".equalsIgnoreCase(category)) {
+            // For "All" category, use the existing count method
+            return notificationRepository.countByUserAndReadFalse(user);
+        } else {
+            // For specific categories, use the repository method
+            return notificationRepository.countByUserAndCategoryAndReadFalse(user, category);
+        }
+    }
+    
+    @Override
+    @Transactional
+    public void markAllAsReadInCategory(Long userId, String category) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+        
+        List<Notification> unreadNotifications;
+        
+        if ("All".equalsIgnoreCase(category)) {
+            // For "All" category, use the existing method
+            unreadNotifications = notificationRepository.findByUserAndReadFalseOrderByCreatedAtDesc(user);
+        } else {
+            // For specific categories, use the repository method
+            unreadNotifications = notificationRepository.findByUserAndCategoryAndReadFalse(user, category);
+        }
+        
+        for (Notification notification : unreadNotifications) {
+            notification.setRead(true);
+            notification.setReadAt(LocalDateTime.now());
+        }
+        
+        notificationRepository.saveAll(unreadNotifications);
+    }}

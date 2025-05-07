@@ -39,6 +39,66 @@ public class NotificationController {
     private final NotificationMapper notificationMapper;
     
     /**
+     * Get notifications by category
+     */
+    @GetMapping("/category/{category}")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Get notifications by category", description = "Retrieve notifications for the current user filtered by category")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Notifications retrieved successfully",
+                    content = @Content(schema = @Schema(implementation = NotificationDTO.class))),
+            @ApiResponse(responseCode = "403", description = "Forbidden, requires authentication")
+    })
+    public ResponseEntity<List<NotificationDTO>> getNotificationsByCategory(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable String category) {
+        Long userId = getUserIdFromEmail(userDetails);
+        List<Notification> notifications = notificationService.getNotificationsByCategory(userId, category);
+        List<NotificationDTO> dtos = notifications.stream()
+                .map(notificationMapper::toDTO)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(dtos);
+    }
+    
+    /**
+     * Get unread notification count by category
+     */
+    @GetMapping("/unread/count/{category}")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Get unread notification count by category", description = "Retrieve the count of unread notifications for the current user by category")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Unread notification count retrieved successfully",
+                    content = @Content(schema = @Schema(implementation = Long.class))),
+            @ApiResponse(responseCode = "403", description = "Forbidden, requires authentication")
+    })
+    public ResponseEntity<Long> getUnreadNotificationCountByCategory(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable String category) {
+        Long userId = getUserIdFromEmail(userDetails);
+        long count = notificationService.getUnreadNotificationCountByCategory(userId, category);
+        return ResponseEntity.ok(count);
+    }
+    
+    /**
+     * Mark all notifications as read for current user in a specific category
+     */
+    @PatchMapping("/read-all/category/{category}")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Mark all notifications as read in a category", description = "Mark all notifications as read for the current user in a specific category")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "All notifications in the category marked as read",
+                    content = @Content(schema = @Schema(implementation = Void.class))),
+            @ApiResponse(responseCode = "403", description = "Forbidden, requires authentication")
+    })
+    public ResponseEntity<Void> markAllAsReadInCategory(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable String category) {
+        Long userId = getUserIdFromEmail(userDetails);
+        notificationService.markAllAsReadInCategory(userId, category);
+        return ResponseEntity.ok().build();
+    }
+    
+    /**
      * Get unread notifications for current user
      */
     @GetMapping("/unread")

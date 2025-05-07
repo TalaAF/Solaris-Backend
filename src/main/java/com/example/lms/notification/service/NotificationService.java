@@ -53,4 +53,18 @@ public interface NotificationService {
      * Delete a notification
      */
     void deleteNotification(Long notificationId);
+    /**
+ * Get notifications by category
+ */
+List<Notification> getNotificationsByCategory(Long userId, String category);
+
+/**
+ * Get count of unread notifications by category
+ */
+long getUnreadNotificationCountByCategory(Long userId, String category);
+
+/**
+ * Mark all notifications as read for a user in a specific category
+ */
+void markAllAsReadInCategory(Long userId, String category);
 }

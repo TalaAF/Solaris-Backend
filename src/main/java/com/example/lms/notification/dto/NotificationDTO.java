@@ -7,7 +7,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-
 @Data
 @Builder
 @NoArgsConstructor
@@ -23,4 +22,5 @@ public class NotificationDTO {
     private int priority;
     private String relatedEntityType;
     private Long relatedEntityId;
+    private String category; // New field
 }

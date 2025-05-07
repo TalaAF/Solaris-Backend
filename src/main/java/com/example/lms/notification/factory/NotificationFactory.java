@@ -67,18 +67,19 @@ public class NotificationFactory {
 
        // Create the notification
        Notification notification = Notification.builder()
-               .type(type)
-               .user(user)
-               .title(processedTitle)
-               .content(processedContent)
-               .relatedEntityId(relatedEntityId)
-               .relatedEntityType(relatedEntityType)
-               .read(false)
-               .sent(false)
-               .emailSent(!preference.isEmailEnabled()) // Mark as sent if email not enabled
-               .priority(getPriorityForType(type))
-               .build();
-       
+            .type(type)
+            .user(user)
+            .title(processedTitle)
+            .content(processedContent)
+            .relatedEntityId(relatedEntityId)
+            .relatedEntityType(relatedEntityType)
+            .read(false)
+            .sent(false)
+            .emailSent(!preference.isEmailEnabled()) 
+            .priority(getPriorityForType(type))
+            .category(type.getCategory()) // Set the category from the type
+            .build();
+            
        Notification savedNotification = notificationRepository.save(notification);
        log.debug("Created notification ID: {} for user: {}, type: {}", 
                savedNotification.getId(), user.getId(), type);

@@ -24,6 +24,7 @@ public class NotificationMapper {
                 .priority(notification.getPriority())
                 .relatedEntityType(notification.getRelatedEntityType())
                 .relatedEntityId(notification.getRelatedEntityId())
+                .category(notification.getType().getCategory()) // Map the category
                 .build();
     }
     
