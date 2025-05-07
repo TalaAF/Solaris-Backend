@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -33,6 +34,7 @@ public class DepartmentDTO {
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
+    @Builder
     public static class Response {
         private Long id;
         private String name;
@@ -43,5 +45,6 @@ public class DepartmentDTO {
         private String contactInformation;
         private boolean isActive;
         private int userCount;
+        private int courseCount; // Added course count field
     }
 }

@@ -4,12 +4,14 @@ import com.example.lms.Department.dto.DepartmentDTO;
 import com.example.lms.Department.service.DepartmentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -88,5 +90,67 @@ public class DepartmentController {
     public ResponseEntity<Void> deleteDepartment(@PathVariable Long id) {
         departmentService.deleteDepartment(id);
         return ResponseEntity.noContent().build();
+    }
+    
+    @GetMapping("/pageable")
+    @Operation(summary = "Get paginated departments", description = "Retrieves paginated list of departments with optional active-only filter")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved paginated departments")
+    })
+    public ResponseEntity<Page<DepartmentDTO.Response>> getPaginatedDepartments(
+            @RequestParam(required = false, defaultValue = "false") boolean activeOnly,
+            Pageable pageable) {
+        Page<DepartmentDTO.Response> departments;
+        if (activeOnly) {
+            departments = departmentService.getAllActiveDepartmentsPageable(pageable);
+        } else {
+            departments = departmentService.getAllDepartmentsPageable(pageable);
+        }
+        return ResponseEntity.ok(departments);
+    }
+    
+    @GetMapping("/search")
+    @Operation(summary = "Search departments", description = "Search departments by name, code, or specialty area")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved search results")
+    })
+    public ResponseEntity<Page<DepartmentDTO.Response>> searchDepartments(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false, defaultValue = "false") boolean activeOnly,
+            Pageable pageable) {
+        return ResponseEntity.ok(departmentService.searchDepartments(keyword, activeOnly, pageable));
+    }
+    
+    @PatchMapping("/{id}/status")
+    @Operation(summary = "Toggle department status", description = "Activate or deactivate a department")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Department status updated successfully"),
+        @ApiResponse(responseCode = "404", description = "Department not found"),
+        @ApiResponse(responseCode = "403", description = "Unauthorized access")
+    })
+    public ResponseEntity<DepartmentDTO.Response> toggleDepartmentStatus(
+            @PathVariable Long id, 
+            @RequestParam boolean active) {
+        return ResponseEntity.ok(departmentService.updateDepartmentStatus(id, active));
+    }
+    
+    @GetMapping("/counts")
+    @Operation(summary = "Get department counts", description = "Get count statistics of departments")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved department counts")
+    })
+    public ResponseEntity<Map<String, Long>> getDepartmentCounts() {
+        return ResponseEntity.ok(departmentService.getDepartmentCounts());
+    }
+    
+    @PostMapping("/batch")
+    @Operation(summary = "Batch create departments", description = "Create multiple departments at once")
+    @ApiResponses({
+        @ApiResponse(responseCode = "201", description = "Departments created successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid input data")
+    })
+    public ResponseEntity<List<DepartmentDTO.Response>> batchCreateDepartments(
+            @Valid @RequestBody List<DepartmentDTO.Request> requests) {
+        return new ResponseEntity<>(departmentService.batchCreateDepartments(requests), HttpStatus.CREATED);
     }
 }

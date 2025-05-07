@@ -1,8 +1,11 @@
 package com.example.lms.Department.service;
 
 import com.example.lms.Department.dto.DepartmentDTO;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
+import java.util.Map;
 
 public interface DepartmentService {
     
@@ -17,4 +20,18 @@ public interface DepartmentService {
     DepartmentDTO.Response updateDepartment(Long id, DepartmentDTO.Request request);
     
     void deleteDepartment(Long id);
+    
+    // New pagination methods
+    Page<DepartmentDTO.Response> getAllDepartmentsPageable(Pageable pageable);
+    
+    Page<DepartmentDTO.Response> getAllActiveDepartmentsPageable(Pageable pageable);
+    
+    // New methods
+    Page<DepartmentDTO.Response> searchDepartments(String keyword, boolean activeOnly, Pageable pageable);
+    
+    DepartmentDTO.Response updateDepartmentStatus(Long id, boolean active);
+    
+    Map<String, Long> getDepartmentCounts();
+    
+    List<DepartmentDTO.Response> batchCreateDepartments(List<DepartmentDTO.Request> requests);
 }
