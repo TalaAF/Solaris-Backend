@@ -1,6 +1,7 @@
 package com.example.lms.progress.controller;
 
 import com.example.lms.common.Exception.ErrorResponse;
+import com.example.lms.progress.dto.CourseProgressVisualizationDTO;
 import com.example.lms.progress.service.ProgressVisualizationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -55,6 +56,38 @@ public class ProgressVisualizationController {
         
         Double overallProgress = progressVisualizationService.calculateOverallProgress(studentId);
         return ResponseEntity.ok(overallProgress);
+    }
+    
+    /**
+     * Get course progress visualization data for a student
+     * 
+     * @param studentId Student ID
+     * @return CourseProgressVisualizationDTO with overall and course-specific progress
+     */
+    @GetMapping("/courses/{studentId}")
+    @Operation(
+        summary = "Get course progress visualization data for a student",
+        description = "Returns overall completion and individual course progress data for visualization"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Successful operation",
+            content = @Content(schema = @Schema(implementation = CourseProgressVisualizationDTO.class))
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Student not found",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        )
+    })
+    @PreAuthorize("hasRole('ADMIN') or hasRole('INSTRUCTOR') or (hasRole('STUDENT') and #studentId == authentication.principal.id)")
+    public ResponseEntity<CourseProgressVisualizationDTO> getCourseProgressVisualization(
+            @Parameter(description = "ID of the student", required = true)
+            @PathVariable Long studentId) {
+        
+        CourseProgressVisualizationDTO visualization = progressVisualizationService.getProgressVisualization(studentId);
+        return ResponseEntity.ok(visualization);
     }
     
     /**
