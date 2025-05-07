@@ -428,4 +428,10 @@ public class CourseController {
         resource.add(linkTo(methodOn(CourseController.class).updateCourse(id, null)).withRel("update"));
         resource.add(linkTo(methodOn(CourseController.class).deleteCourse(id)).withRel("delete"));
     }
+    // Add this to a controller, e.g., to CourseController.java
+
+@GetMapping("/health")
+public ResponseEntity<String> healthCheck() {
+    return ResponseEntity.ok("Backend service is running");
+}
 }
