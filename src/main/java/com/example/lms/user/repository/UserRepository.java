@@ -35,4 +35,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
     // Add this method to find users by role name
     @Query("SELECT u FROM User u JOIN u.roles r WHERE r.name = :roleName")
     List<User> findByRoleName(@Param("roleName") String roleName);
+
+    // Count users in a specific department
+    Long countByDepartmentId(Long departmentId);
+    
+    // Count users in all departments (returns departmentId, count)
+    @Query("SELECT u.department.id, COUNT(u) FROM User u WHERE u.department IS NOT NULL GROUP BY u.department.id")
+    List<Object[]> countUsersByDepartment();
 }

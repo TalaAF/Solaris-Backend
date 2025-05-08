@@ -5,6 +5,9 @@ import com.example.lms.Department.model.Department;
 import com.example.lms.Department.repository.DepartmentRepository;
 import com.example.lms.common.Exception.ResourceAlreadyExistsException;
 import com.example.lms.common.Exception.ResourceNotFoundException;
+import com.example.lms.user.repository.UserRepository; // Changed from User to user
+import com.example.lms.user.model.User;
+import com.example.lms.Department.dto.DepartmentDTO.HeadDTO;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -23,6 +26,7 @@ import java.util.stream.Collectors;
 public class DepartmentServiceImpl implements DepartmentService {
     
     private final DepartmentRepository departmentRepository;
+    private final UserRepository userRepository;
     
     @Override
     @Transactional(readOnly = true)
@@ -78,8 +82,15 @@ public class DepartmentServiceImpl implements DepartmentService {
         department.setName(request.getName());
         department.setDescription(request.getDescription());
         department.setCode(request.getCode());
-        department.setSpecialtyArea(request.getSpecialtyArea());
-        department.setHeadOfDepartment(request.getHeadOfDepartment());
+        
+        // REMOVE this line as it's using the old field
+        // department.setHeadOfDepartment(request.getHeadOfDepartment());
+        
+        // Instead, handle the head relationship if headId is provided
+        if (request.getHeadId() != null) {
+            userRepository.findById(request.getHeadId()).ifPresent(department::setHead);
+        }
+        
         department.setContactInformation(request.getContactInformation());
         department.setActive(request.isActive());
         
@@ -108,8 +119,15 @@ public class DepartmentServiceImpl implements DepartmentService {
         department.setName(request.getName());
         department.setDescription(request.getDescription());
         department.setCode(request.getCode());
-        department.setSpecialtyArea(request.getSpecialtyArea());
-        department.setHeadOfDepartment(request.getHeadOfDepartment());
+        
+        // Only update head if headId is provided
+        if (request.getHeadId() != null) {
+            userRepository.findById(request.getHeadId()).ifPresent(department::setHead);
+        } else {
+            // If headId is not provided, ensure head is null (remove head)
+            department.setHead(null);
+        }
+        
         department.setContactInformation(request.getContactInformation());
         department.setActive(request.isActive());
         
@@ -131,18 +149,35 @@ public class DepartmentServiceImpl implements DepartmentService {
     
     // Updated mapper method using builder pattern
     private DepartmentDTO.Response mapToResponseDTO(Department department) {
-        return DepartmentDTO.Response.builder()
+        DepartmentDTO.Response.ResponseBuilder builder = DepartmentDTO.Response.builder()
                 .id(department.getId())
                 .name(department.getName())
                 .description(department.getDescription())
                 .code(department.getCode())
-                .specialtyArea(department.getSpecialtyArea())
-                .headOfDepartment(department.getHeadOfDepartment())
                 .contactInformation(department.getContactInformation())
-                .isActive(department.isActive())
-                .userCount(department.getUsers() != null ? department.getUsers().size() : 0)
-                .courseCount(department.getCourses() != null ? department.getCourses().size() : 0)
-                .build();
+                .active(department.isActive()) // Use isActive instead of setIsActive for the builder
+                .userCount(department.getUsers() != null ? Long.valueOf(department.getUsers().size()) : 0L)
+                .courseCount(department.getCourses() != null ? Long.valueOf(department.getCourses().size()) : 0L);
+
+        // Add head information if present
+        if (department.getHead() != null) {
+            User head = department.getHead();
+            builder.head(new DepartmentDTO.HeadDTO(
+                head.getId(),
+                head.getFullName(),
+                head.getEmail()
+            ));
+        }
+        
+        return builder.build();
+    }
+
+    // Add this private method:
+    private DepartmentDTO responseToDepartmentDTO(DepartmentDTO.Response response) {
+        // Create and return a DepartmentDTO from the response
+        DepartmentDTO dto = new DepartmentDTO();
+        // Copy properties from response to dto
+        return dto;
     }
 
     @Override
@@ -204,8 +239,12 @@ public class DepartmentServiceImpl implements DepartmentService {
             department.setName(request.getName());
             department.setDescription(request.getDescription());
             department.setCode(request.getCode());
-            department.setSpecialtyArea(request.getSpecialtyArea());
-            department.setHeadOfDepartment(request.getHeadOfDepartment());
+            
+            // Only set head if headId is provided
+            if (request.getHeadId() != null) {
+                userRepository.findById(request.getHeadId()).ifPresent(department::setHead);
+            }
+            
             department.setContactInformation(request.getContactInformation());
             department.setActive(request.isActive());
             
@@ -216,5 +255,83 @@ public class DepartmentServiceImpl implements DepartmentService {
         return departments.stream()
                 .map(this::mapToResponseDTO)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public Long getUserCountForDepartment(Long departmentId) {
+        return userRepository.countByDepartmentId(departmentId);
+    }
+    
+    @Override
+    public Map<Long, Long> getUserCountsForAllDepartments() {
+        // Get counts for all departments in one efficient query
+        List<Object[]> results = userRepository.countUsersByDepartment();
+        
+        Map<Long, Long> countMap = new HashMap<>();
+        for (Object[] result : results) {
+            Long departmentId = (Long) result[0];
+            Long count = (Long) result[1];
+            countMap.put(departmentId, count);
+        }
+        
+        return countMap;
+    }
+    
+    @Override
+    public List<DepartmentDTO.Response> getAllDepartmentsWithUserCounts() {
+        List<Department> departments = departmentRepository.findAll();
+        Map<Long, Long> userCounts = getUserCountsForAllDepartments();
+        
+        return departments.stream()
+            .map(dept -> {
+                DepartmentDTO.Response dto = mapToResponseDTO(dept);
+                dto.setUserCount(userCounts.getOrDefault(dept.getId(), 0L));
+                return dto;
+            })
+            .collect(Collectors.toList());
+    }
+    
+    @Override
+    public Page<DepartmentDTO.Response> getAllDepartmentsPageableWithUserCounts(Pageable pageable) {
+        Page<Department> departmentPage = departmentRepository.findAll(pageable);
+        Map<Long, Long> userCounts = getUserCountsForAllDepartments();
+        
+        return departmentPage.map(dept -> {
+            DepartmentDTO.Response dto = mapToResponseDTO(dept);
+            dto.setUserCount(userCounts.getOrDefault(dept.getId(), 0L));
+            return dto;
+        });
+    }
+
+    @Override
+    @Transactional
+    public DepartmentDTO.Response assignDepartmentHead(Long departmentId, Long userId) {
+        Department department = departmentRepository.findById(departmentId)
+            .orElseThrow(() -> new ResourceNotFoundException("Department not found with id: " + departmentId));
+        
+        // Find the user to assign as head
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+        
+        // Set the head
+        department.setHead(user);
+        department = departmentRepository.save(department);
+        
+        // Return updated department - just return the response directly
+        return mapToResponseDTO(department);
+    }
+
+    @Override
+    @Transactional
+    public DepartmentDTO.Response removeDepartmentHead(Long departmentId) {
+        Department department = departmentRepository.findById(departmentId)
+            .orElseThrow(() -> new ResourceNotFoundException("Department not found with id: " + departmentId));
+        
+        // Remove the head
+        department.setHead(null);
+        department = departmentRepository.save(department);
+        
+        // Return updated department - just return the response directly
+        return mapToResponseDTO(department);
     }
 }

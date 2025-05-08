@@ -153,4 +153,20 @@ public class DepartmentController {
             @Valid @RequestBody List<DepartmentDTO.Request> requests) {
         return new ResponseEntity<>(departmentService.batchCreateDepartments(requests), HttpStatus.CREATED);
     }
+    
+    @PatchMapping("/{id}/head")
+    @Operation(summary = "Assign department head", description = "Assign a user as head of department")
+    public ResponseEntity<DepartmentDTO.Response> assignDepartmentHead(
+            @PathVariable Long id, 
+            @RequestBody Map<String, Long> request) {
+        
+        Long userId = request.get("userId");
+        return ResponseEntity.ok(departmentService.assignDepartmentHead(id, userId));
+    }
+
+    @DeleteMapping("/{id}/head")
+    @Operation(summary = "Remove department head", description = "Remove the current head of department")
+    public ResponseEntity<DepartmentDTO.Response> removeDepartmentHead(@PathVariable Long id) {
+        return ResponseEntity.ok(departmentService.removeDepartmentHead(id));
+    }
 }

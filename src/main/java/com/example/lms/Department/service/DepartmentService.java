@@ -34,4 +34,18 @@ public interface DepartmentService {
     Map<String, Long> getDepartmentCounts();
     
     List<DepartmentDTO.Response> batchCreateDepartments(List<DepartmentDTO.Request> requests);
+    
+    DepartmentDTO.Response assignDepartmentHead(Long departmentId, Long userId);
+    
+    DepartmentDTO.Response removeDepartmentHead(Long departmentId);
+    
+    // New user count methods
+    Long getUserCountForDepartment(Long departmentId);
+    
+    Map<Long, Long> getUserCountsForAllDepartments();
+    
+    // Enhanced methods that include user counts
+    List<DepartmentDTO.Response> getAllDepartmentsWithUserCounts();
+    
+    Page<DepartmentDTO.Response> getAllDepartmentsPageableWithUserCounts(Pageable pageable);
 }

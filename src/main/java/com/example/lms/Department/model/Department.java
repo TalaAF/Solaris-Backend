@@ -40,9 +40,19 @@ public class Department {
 
     // For healthcare-specific functionality
     private String specialtyArea;
-    private String headOfDepartment;
     private String contactInformation;
     private boolean isActive = true;
 
+    @ManyToOne
+    @JoinColumn(name = "head_id")
+    private User head;
+
+    // getters and setters
+    public User getHead() {
+        return head;
+    }
     
+    public void setHead(User head) {
+        this.head = head;
+    }
 }
