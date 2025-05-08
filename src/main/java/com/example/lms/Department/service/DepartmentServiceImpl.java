@@ -293,11 +293,16 @@ public class DepartmentServiceImpl implements DepartmentService {
     
     @Override
     public Page<DepartmentDTO.Response> getAllDepartmentsPageableWithUserCounts(Pageable pageable) {
+        // 1. Get paginated departments
         Page<Department> departmentPage = departmentRepository.findAll(pageable);
+        
+        // 2. Get user counts for all departments in one efficient query
         Map<Long, Long> userCounts = getUserCountsForAllDepartments();
         
+        // 3. Map departments to DTOs with user counts
         return departmentPage.map(dept -> {
             DepartmentDTO.Response dto = mapToResponseDTO(dept);
+            // Add user count from our efficient query (overrides what mapToResponseDTO might have set)
             dto.setUserCount(userCounts.getOrDefault(dept.getId(), 0L));
             return dto;
         });

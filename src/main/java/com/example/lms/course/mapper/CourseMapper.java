@@ -40,23 +40,37 @@ public class CourseMapper {
             course.setMaxCapacity(courseDTO.getMaxCapacity());
         }
         
-        // Set startDate and endDate
-        course.setStartDate(courseDTO.getStartDate());
-        course.setEndDate(courseDTO.getEndDate());
+        // Set startDate and endDate with null checks
+        if (courseDTO.getStartDate() != null) {
+            course.setStartDate(courseDTO.getStartDate());
+        }
         
-        // Set status flags
+        if (courseDTO.getEndDate() != null) {
+            course.setEndDate(courseDTO.getEndDate());
+        }
+        
+        // Set status flags with defaults if null
         course.setPublished(courseDTO.isPublished());
+        
+        // FIX: Handle isArchived as primitive boolean (can't be null)
         course.setArchived(courseDTO.isArchived());
+        
+        // FIX: Check if semester exists using an alternative approach
+        if (courseDTO.getSemesterName() != null) {
+            course.setSemester(courseDTO.getSemesterName());
+        }
+        
+        // Handle credits if present in the Course entity
+        if (courseDTO.getCredits() != null) {
+            course.setCredits(courseDTO.getCredits());
+        }
         
         // Set prerequisites
         if (courseDTO.getPrerequisiteCourseIds() != null && !courseDTO.getPrerequisiteCourseIds().isEmpty()) {
             Set<Course> prerequisites = new HashSet<>();
             course.setPrerequisites(prerequisites);
-            
-            // Note: The actual prerequisite courses need to be loaded from the repository
-            // This is done in the service layer, not in the mapper
         }
-    
+
         return course;
     }
     /**

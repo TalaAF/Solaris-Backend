@@ -79,6 +79,12 @@ public class CourseDTO extends RepresentationModel<CourseDTO> {
     private Integer progress = 0; // Student progress in course (default 0)
     private List<ModuleDTO> modules; // List of modules in the course
     
+    // New field for semester name
+    private String semesterName;
+    
+    // New field for credits
+    private Integer credits;
+    
     /**
      * Minimal constructor with essential fields
      */
