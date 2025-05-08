@@ -147,22 +147,52 @@ public class AdminUserService {
     }
     
     @Transactional
-    public UserDTO updateUser(Long id, UserUpdateRequest userUpdateRequest) {
+    public User updateUser(Long id, UserUpdateRequest request) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         
-        // Update only non-null fields
-        if (userUpdateRequest.getEmail() != null && !user.getEmail().equals(userUpdateRequest.getEmail())) {
-            if (userRepository.existsByEmail(userUpdateRequest.getEmail())) {
-                throw new IllegalArgumentException("Email already in use");
-            }
-            user.setEmail(userUpdateRequest.getEmail());
+        // Update basic fields
+        if (request.getFullName() != null) {
+            user.setFullName(request.getFullName());
         }
         
-        // Update other fields from the request
-        userMapper.updateEntity(user, userUpdateRequest);
+        if (request.getEmail() != null) {
+            user.setEmail(request.getEmail());
+        }
         
-        return userMapper.toDto(userRepository.save(user));
+        // Update active status - handle both field names
+        Boolean activeStatus = request.getIsActive();
+        if (activeStatus == null) {
+            activeStatus = request.isActive(); // Try alternative field name
+        }
+        if (activeStatus != null) {
+            user.setActive(activeStatus);
+        }
+        
+        // Handle profile picture if present
+        if (request.getProfilePicture() != null) {
+            user.setProfilePicture(request.getProfilePicture());
+        }
+        
+        // Handle department relationship
+        if (request.getDepartmentId() != null) {
+            Department department = departmentRepository.findById(request.getDepartmentId())
+                .orElseThrow(() -> new ResourceNotFoundException("Department not found"));
+            user.setDepartment(department);
+        }
+        
+        // Handle roles relationship
+        if (request.getRoleNames() != null && !request.getRoleNames().isEmpty()) {
+            Set<Role> roles = new HashSet<>();
+            for (String roleName : request.getRoleNames()) {
+                Role role = roleRepository.findByName(roleName)
+                    .orElseThrow(() -> new ResourceNotFoundException("Role not found: " + roleName));
+                roles.add(role);
+            }
+            user.setRoles(roles);
+        }
+        
+        return userRepository.save(user);
     }
     
     @Transactional

@@ -44,7 +44,6 @@ public class CertificateController {
                 .verificationId(certificate.getVerificationId())
                 .issuedAt(certificate.getIssuedAt())
                 .revoked(certificate.isRevoked())
-                .revocationReason(certificate.getRevocationReason())
                 .build();
     }
     

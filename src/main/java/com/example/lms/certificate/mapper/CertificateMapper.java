@@ -15,7 +15,6 @@ public class CertificateMapper {
         dto.setVerificationId(certificate.getVerificationId());
         dto.setIssuedAt(certificate.getIssuedAt());
         dto.setRevoked(certificate.isRevoked());
-        dto.setRevocationReason(certificate.getRevocationReason());
         return dto;
     }
 

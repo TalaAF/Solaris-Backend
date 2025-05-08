@@ -1,11 +1,14 @@
 package com.example.lms.user.controller;
 
+import com.example.lms.common.Exception.ResourceNotFoundException;
 import com.example.lms.security.dto.RoleDTO;
 import com.example.lms.user.dto.UserCreateRequest;
 import com.example.lms.user.dto.UserDTO;
 import com.example.lms.user.dto.UserListDTO;
 import com.example.lms.user.dto.UserUpdateRequest;
 import com.example.lms.user.service.AdminUserService;
+import com.example.lms.user.mapper.UserMapper;
+import lombok.extern.slf4j.Slf4j;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -24,6 +27,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import com.example.lms.user.model.User;
+import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @RequestMapping("/api/admin/users")
@@ -36,9 +41,11 @@ import java.util.Set;
         @ApiResponse(responseCode = "404", description = "User not found"),
         @ApiResponse(responseCode = "403", description = "Forbidden")
 })
+@Slf4j
 public class AdminUserController {
 
     private final AdminUserService adminUserService;
+    private final UserMapper userMapper;
 
     @GetMapping
     @Operation(summary = "Get paginated users list", description = "Returns paginated list of users with filtering options")
@@ -145,10 +152,18 @@ public class AdminUserController {
         @ApiResponse(responseCode = "404", description = "User not found"),
         @ApiResponse(responseCode = "400", description = "Invalid input")
     })
-    public ResponseEntity<UserDTO> updateUser(
-            @PathVariable Long id, 
-            @Valid @RequestBody UserUpdateRequest request) {
-        return ResponseEntity.ok(adminUserService.updateUser(id, request));
+    public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody UserUpdateRequest request) {
+        try {
+            User updatedUser = adminUserService.updateUser(id, request);
+            UserDTO userDTO = userMapper.toDto(updatedUser);
+            return ResponseEntity.ok(userDTO);
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            log.error("Error updating user: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Error updating user: " + e.getMessage());
+        }
     }
 
     @DeleteMapping("/{id}")
