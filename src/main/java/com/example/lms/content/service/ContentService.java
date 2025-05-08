@@ -30,6 +30,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 public class ContentService {
@@ -84,6 +86,36 @@ public class ContentService {
         return contentRepository.save(content);
     }
 
+    // Enhanced create content method
+    @Transactional
+    public Content createContent(Long courseId, MultipartFile file, String title, String description, 
+                                boolean isPublished, Integer duration) {
+        // Check if the course exists
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new RuntimeException("Course not found"));
+
+        // Upload the file and get its path
+        String filePath = fileStorageService.storeFile(file);
+
+        // Extract metadata
+        String fileType = metadataExtractor.extractFileType(file);
+        long fileSize = metadataExtractor.extractFileSize(file);
+
+        // Create the content object
+        Content content = new Content();
+        content.setTitle(title);
+        content.setDescription(description);
+        content.setFilePath(filePath);
+        content.setFileType(fileType);
+        content.setFileSize(fileSize);
+        content.setCourse(course);
+        content.setIsPublished(isPublished);
+        content.setDuration(duration);
+        
+        // Save content to database
+        return contentRepository.save(content);
+    }
+
     // Get content by ID
     @Transactional(readOnly = true)
     public Optional<Content> getContentById(Long id) {
@@ -126,6 +158,17 @@ public class ContentService {
     @Transactional
     public boolean deleteContent(Long id) {
         return contentRepository.findById(id).map(content -> {
+            // Instead of removing from database, mark as deleted
+            content.setDeleted(true);
+            contentRepository.save(content);
+            return true;
+        }).orElse(false);
+    }
+
+    // Add method to permanently delete content if needed
+    @Transactional
+    public boolean permanentlyDeleteContent(Long id) {
+        return contentRepository.findById(id).map(content -> {
             // Delete the associated file from storage
             fileStorageService.deleteFile(content.getFilePath());
             // Delete content from database
@@ -138,36 +181,49 @@ public class ContentService {
     
     // Convert Content to ContentDTO
     public ContentDTO convertToDTO(Content content) {
-        CourseDTO courseDTO = new CourseDTO();
-        courseDTO.setId(content.getCourse().getId());
-        courseDTO.setTitle(content.getCourse().getTitle());
-        courseDTO.setDescription(content.getCourse().getDescription());
-        courseDTO.setInstructorEmail(content.getCourse().getInstructor().getEmail());
-        courseDTO.setDepartmentId(content.getCourse().getDepartment().getId());
-        courseDTO.setDepartmentName(content.getCourse().getDepartment().getName());
-
-        // Generate preview
-        String preview = generatePreview(content.getDescription(), 100);
-
-        return new ContentDTO(
-            content.getId(),
-            content.getTitle(),
-            content.getDescription(),
-            content.getFilePath(),
-            content.getFileType(),
-            content.getFileSize(),
-            content.getCreatedAt().toString(),
-            content.getUpdatedAt().toString(),
-            content.getCourse().getId(),
-            content.getCourse().getTitle(),
-            content.getModule() != null ? content.getModule().getId() : null,
-            content.getModule() != null ? content.getModule().getTitle() : null,
-            content.getOrder(),
-            content.getTags() != null ? 
-                content.getTags().stream().map(Tag::getName).collect(Collectors.toList()) : 
-                Collections.emptyList(),
-            generatePreview(content.getDescription(), 100)
-        );
+        ContentDTO dto = new ContentDTO();
+        dto.setId(content.getId());
+        dto.setTitle(content.getTitle());
+        dto.setDescription(content.getDescription());
+        dto.setFilePath(content.getFilePath());
+        dto.setFileType(content.getFileType());
+        dto.setFileSize(content.getFileSize());
+        dto.setCreatedAt(content.getCreatedAt().toString());
+        dto.setUpdatedAt(content.getUpdatedAt().toString());
+        
+        if (content.getCourse() != null) {
+            dto.setCourseId(content.getCourse().getId());
+            dto.setCourseName(content.getCourse().getTitle());
+        }
+        
+        if (content.getModule() != null) {
+            dto.setModuleId(content.getModule().getId());
+            dto.setModuleName(content.getModule().getTitle());
+        }
+        
+        dto.setOrder(content.getOrder());
+        
+        if (content.getTags() != null) {
+            dto.setTags(content.getTags().stream().map(Tag::getName).collect(Collectors.toList()));
+        } else {
+            dto.setTags(Collections.emptyList());
+        }
+        
+        dto.setPublished(content.isPublished());
+        dto.setDuration(content.getDuration());
+        dto.setFileUrl("/api/contents/" + content.getId() + "/download");
+        
+        // Add author information
+        if (content.getCourse() != null && content.getCourse().getInstructor() != null) {
+            Map<String, String> author = new HashMap<>();
+            author.put("id", content.getCourse().getInstructor().getId().toString());
+            author.put("name", content.getCourse().getInstructor().getFullName());
+            dto.setAuthor(author);
+        }
+        
+        dto.setPreview(generatePreview(content.getDescription(), 100));
+        
+        return dto;
     }
 
     // Generate preview
@@ -278,5 +334,75 @@ public Page<Content> searchByKeyword(String keyword, Pageable pageable) {
         } else {
             return contentRepository.findAll();
         }
+    }
+
+    // Add toggle publication status method
+    @Transactional
+    public Content togglePublicationStatus(Long contentId, boolean isPublished) {
+        Content content = contentRepository.findById(contentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Content not found with id: " + contentId));
+        content.setIsPublished(isPublished);
+        return contentRepository.save(content);
+    }
+
+    // Enhanced content search with pagination
+    public Page<ContentDTO> getContentsList(String keyword, String fileType, 
+                                           List<String> tags, Boolean isPublished,
+                                           Pageable pageable) {
+        Page<Content> contentPage;
+        
+        // Implement logic to filter by multiple criteria
+        if (keyword != null && !keyword.isEmpty()) {
+            String searchTerm = "%" + keyword.toLowerCase() + "%";
+            contentPage = contentRepository.findBySearchCriteria(searchTerm, fileType, tags, isPublished, pageable);
+        } else if (fileType != null || (tags != null && !tags.isEmpty()) || isPublished != null) {
+            contentPage = contentRepository.findByFilters(fileType, tags, isPublished, pageable);
+        } else {
+            contentPage = contentRepository.findAll(pageable);
+        }
+        
+        return contentPage.map(this::convertToDTO);
+    }
+
+    @Transactional
+public Content updateContentDetails(Long id, String title, String description, Boolean isPublished, Integer duration) {
+    return contentRepository.findById(id)
+        .map(content -> {
+            // Save the current version before updating
+            ContentVersion version = new ContentVersion();
+            version.setTitle(content.getTitle());
+            version.setDescription(content.getDescription());
+            version.setFilePath(content.getFilePath());
+            version.setFileType(content.getFileType());
+            version.setFileSize(content.getFileSize());
+            version.setContent(content);
+            contentVersionRepository.save(version);
+
+            // Update the content with new values
+            if (title != null) content.setTitle(title);
+            if (description != null) content.setDescription(description);
+            if (isPublished != null) content.setIsPublished(isPublished);
+            if (duration != null) content.setDuration(duration);
+            
+            return contentRepository.save(content);
+        })
+        .orElseThrow(() -> new ResourceNotFoundException("Content not found with id: " + id));
+}
+
+    // Add this method to ContentService
+    @Transactional
+    public boolean restoreContent(Long id) {
+        try {
+            contentRepository.restoreContent(id);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    // Add method to get deleted content
+    @Transactional(readOnly = true)
+    public Page<ContentDTO> getDeletedContents(Pageable pageable) {
+        return contentRepository.findDeleted(pageable).map(this::convertToDTO);
     }
 }

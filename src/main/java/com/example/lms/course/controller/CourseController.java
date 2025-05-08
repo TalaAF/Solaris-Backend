@@ -18,9 +18,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.data.domain.Page;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.Map;
+import java.util.HashMap;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 
@@ -102,21 +105,50 @@ public class CourseController {
         return ResponseEntity.ok(resource);
     }
 
+    @GetMapping
+@Operation(summary = "Get all courses with pagination and filtering", 
+          description = "Returns a paginated list of courses with optional filtering")
+@ApiResponses(value = {
+    @ApiResponse(responseCode = "200", description = "Successfully retrieved courses"),
+    @ApiResponse(responseCode = "403", description = "Not authorized to access courses")
+})
+public ResponseEntity<Page<CourseDTO>> getCourses(
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size,
+        @RequestParam(required = false) String title,
+        @RequestParam(required = false) Long departmentId,
+        @RequestParam(required = false) Long instructorId,
+        @RequestParam(required = false) Boolean published,
+        @RequestParam(required = false) Boolean archived,
+        @RequestParam(defaultValue = "id") String sortBy,
+        @RequestParam(defaultValue = "asc") String sortDirection) {
+    
+    // Create filter map from parameters
+    Map<String, Object> filters = new HashMap<>();
+    if (title != null) filters.put("title", title);
+    if (departmentId != null) filters.put("departmentId", departmentId);
+    if (instructorId != null) filters.put("instructorId", instructorId);
+    if (published != null) filters.put("published", published);
+    if (archived != null) filters.put("archived", archived);
+    
+    Page<CourseDTO> courses = courseService.getCourses(page, size, sortBy, sortDirection, filters);
+    return ResponseEntity.ok(courses);
+}
     /**
      * Get all courses
      * 
      * @return Collection of courses with HATEOAS links
      */
-    @GetMapping
+    @GetMapping("/all")
     @Operation(
-        summary = "Get all courses", 
-        description = "Retrieves a list of all courses in the system",
+summary = "Get all courses", 
+          description = "Retrieves a list of all courses in the system",
         tags = {"Course Management"}
-    )
+)
     @ApiResponses(value = {
         @ApiResponse(
-            responseCode = "200", 
-            description = "Courses retrieved successfully",
+responseCode = "200", 
+description = "Courses retrieved successfully",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = CourseDTO.class))
         )
     })

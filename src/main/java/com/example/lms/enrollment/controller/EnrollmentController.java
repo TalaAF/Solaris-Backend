@@ -1,13 +1,15 @@
 package com.example.lms.enrollment.controller;
 
 import com.example.lms.enrollment.dto.EnrollmentDTO;
+import com.example.lms.enrollment.dto.EnrollmentRequest;        // Add this
+import com.example.lms.enrollment.dto.BatchEnrollmentRequest;   // Add this
+import com.example.lms.enrollment.dto.StatusUpdateRequest;      // Add this
+import com.example.lms.enrollment.dto.ProgressUpdateRequest;    // Add this
 import com.example.lms.enrollment.service.EnrollmentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,13 +24,39 @@ public class EnrollmentController {
     /**
      * Enroll a student in a course
      */
-    @PostMapping("/enroll")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('INSTRUCTOR') or @userRepository.findById(#studentId).orElse(new com.example.lms.user.model.User()).getEmail() == authentication.name")
-    public ResponseEntity<EnrollmentDTO> enrollStudent(
-            @RequestParam Long studentId, 
-            @RequestParam Long courseId) {
-        EnrollmentDTO enrollment = enrollmentService.enrollStudent(studentId, courseId);
+    @PostMapping
+    @PreAuthorize("hasRole('ADMIN') or hasRole('INSTRUCTOR') or @userRepository.findById(#enrollmentRequest.userId).orElse(new com.example.lms.user.model.User()).getEmail() == authentication.name")
+    public ResponseEntity<EnrollmentDTO> enrollStudent(@RequestBody EnrollmentRequest enrollmentRequest) {
+        EnrollmentDTO enrollment = enrollmentService.enrollStudent(
+            enrollmentRequest.getUserId(), 
+            enrollmentRequest.getCourseId()
+        );
         return new ResponseEntity<>(enrollment, HttpStatus.CREATED);
+    }
+
+    /**
+     * Enroll multiple students in a course
+     */
+    @PostMapping("/batch")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('INSTRUCTOR')")
+    public ResponseEntity<List<EnrollmentDTO>> enrollMultipleStudents(@RequestBody BatchEnrollmentRequest request) {
+        List<EnrollmentDTO> enrollments = enrollmentService.enrollMultipleStudents(
+            request.getCourseId(), 
+            request.getUserIds()
+        );
+        return ResponseEntity.status(HttpStatus.CREATED).body(enrollments);
+    }
+
+    /**
+     * Update enrollment status
+     */
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('INSTRUCTOR')")
+    public ResponseEntity<EnrollmentDTO> updateEnrollmentStatus(
+            @PathVariable Long id,
+            @RequestBody StatusUpdateRequest request) {
+        EnrollmentDTO updatedEnrollment = enrollmentService.updateEnrollmentStatus(id, request.getStatus());
+        return ResponseEntity.ok(updatedEnrollment);
     }
 
     /**
@@ -54,14 +82,17 @@ public class EnrollmentController {
     /**
      * Update enrollment progress
      */
-    @PatchMapping("/{studentId}/{courseId}/progress")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('INSTRUCTOR') or @userRepository.findById(#studentId).orElse(new com.example.lms.user.model.User()).getEmail() == authentication.name")
+    @PatchMapping("/{id}/progress")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('INSTRUCTOR')")
     public ResponseEntity<EnrollmentDTO> updateProgress(
-            @PathVariable Long studentId,
-            @PathVariable Long courseId,
-            @RequestParam Double progress) {
+            @PathVariable Long id,
+            @RequestBody ProgressUpdateRequest request) {
         
-        EnrollmentDTO updatedEnrollment = enrollmentService.updateProgress(studentId, courseId, progress);
+        EnrollmentDTO updatedEnrollment = enrollmentService.updateProgressById(
+            id, 
+            request.getProgress(), 
+            request.getGrade()
+        );
         return ResponseEntity.ok(updatedEnrollment);
     }
     
@@ -94,13 +125,10 @@ public class EnrollmentController {
     /**
      * Unenroll a student from a course
      */
-    @DeleteMapping("/{studentId}/{courseId}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('INSTRUCTOR') or @userRepository.findById(#studentId).orElse(new com.example.lms.user.model.User()).getEmail() == authentication.name")
-    public ResponseEntity<Void> unenrollStudent(
-            @PathVariable Long studentId,
-            @PathVariable Long courseId) {
-        
-        enrollmentService.unenrollStudent(studentId, courseId);
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('INSTRUCTOR')")
+    public ResponseEntity<Void> unenrollStudent(@PathVariable Long id) {
+        enrollmentService.unenrollStudentById(id);
         return ResponseEntity.noContent().build();
     }
 }

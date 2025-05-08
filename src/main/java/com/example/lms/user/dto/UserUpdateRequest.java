@@ -1,9 +1,17 @@
 package com.example.lms.user.dto;
 
+import java.util.List;
+
 import jakarta.validation.constraints.Email;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class UserUpdateRequest {
     @Email(message = "Email should be valid")
     private String email;
@@ -11,6 +19,9 @@ public class UserUpdateRequest {
     // Keep the field name as fullName for internal consistency
     private String fullName;
     
+    private Long departmentId;
+    private List<String> roleNames;
+    private Boolean isActive; // Use wrapper class to allow null
     // Keep the field name as profilePicture for internal consistency
     private String profilePicture;
     
@@ -28,5 +39,14 @@ public class UserUpdateRequest {
      */
     public void setProfileImage(String profileImage) {
         this.profilePicture = profileImage;
+    }
+    
+    // Include both forms for maximum compatibility
+    public Boolean isActive() {
+        return isActive;
+    }
+    
+    public Boolean getIsActive() {
+        return isActive;
     }
 }

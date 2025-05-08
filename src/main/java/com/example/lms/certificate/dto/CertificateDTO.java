@@ -1,20 +1,23 @@
 package com.example.lms.certificate.dto;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;  // Add this import
 import java.time.LocalDateTime;
 
-import lombok.Data;
 @Data
+@Builder
+@NoArgsConstructor 
+@AllArgsConstructor // This will generate a default constructor
 public class CertificateDTO {
+    private Long id;
     private Long studentId;
     private Long courseId;
+    private String courseName;
     private String certificateUrl;
+    private String verificationId;
     private LocalDateTime issuedAt;
-
-    public CertificateDTO(Long studentId, Long courseId, String certificateUrl, LocalDateTime issuedAt) {
-        this.studentId = studentId;
-        this.courseId = courseId;
-        this.certificateUrl = certificateUrl;
-        this.issuedAt = issuedAt;
-    }
-
+    private boolean revoked;
+    private String revocationReason;
 }

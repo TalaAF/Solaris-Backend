@@ -138,7 +138,6 @@ public Certificate revokeCertificate(Long certificateId, String reason) {
             .orElseThrow(() -> new ResourceNotFoundException("Certificate not found"));
     
     certificate.setRevoked(true);
-    certificate.setRevocationReason(reason);
     
     return certificateRepository.save(certificate);
 }

@@ -1,11 +1,18 @@
 package com.example.lms.user.controller;
 
+import com.example.lms.common.Exception.ResourceNotFoundException;
 import com.example.lms.security.dto.RoleDTO;
+import com.example.lms.user.dto.UserCreateRequest;
 import com.example.lms.user.dto.UserDTO;
 import com.example.lms.user.dto.UserListDTO;
+import com.example.lms.user.dto.UserUpdateRequest;
 import com.example.lms.user.service.AdminUserService;
+import com.example.lms.user.mapper.UserMapper;
+import lombok.extern.slf4j.Slf4j;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.Operation;
@@ -16,9 +23,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import com.example.lms.user.model.User;
+import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @RequestMapping("/api/admin/users")
@@ -31,11 +41,18 @@ import java.util.Set;
         @ApiResponse(responseCode = "404", description = "User not found"),
         @ApiResponse(responseCode = "403", description = "Forbidden")
 })
+@Slf4j
 public class AdminUserController {
 
     private final AdminUserService adminUserService;
+    private final UserMapper userMapper;
 
     @GetMapping
+    @Operation(summary = "Get paginated users list", description = "Returns paginated list of users with filtering options")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved user list"),
+        @ApiResponse(responseCode = "403", description = "Forbidden")
+    })
     public ResponseEntity<Page<UserListDTO>> getAllUsers(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -43,9 +60,23 @@ public class AdminUserController {
             @RequestParam(defaultValue = "asc") String sortDirection,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) Boolean active,
-            @RequestParam(required = false) Set<String> roles) {
+            @RequestParam(required = false) Boolean status, 
+            @RequestParam(required = false) Set<String> roles,
+            @RequestParam(required = false) String role,
+            @RequestParam(required = false) Long department) {
         
-        return ResponseEntity.ok(adminUserService.getAllUsers(page, size, sortBy, sortDirection, search, active, roles));
+        // Convert single role to Set if provided
+        if (role != null && (roles == null || roles.isEmpty())) {
+            roles = Collections.singleton(role);
+        }
+        
+        // Use status parameter if active is not provided
+        if (active == null && status != null) {
+            active = status;
+        }
+        
+        return ResponseEntity.ok(adminUserService.getAllUsers(
+            page, size, sortBy, sortDirection, search, active, roles, department));
     }
 
     @Operation (summary = "Get user by ID", description = "Retrieve a user by their ID")
@@ -101,5 +132,64 @@ public class AdminUserController {
     })
     public ResponseEntity<List<RoleDTO>> getAllRoles() {
         return ResponseEntity.ok(adminUserService.getAllRoles());
+    }
+
+    @PostMapping
+    @Operation(summary = "Create a new user", description = "Creates a new user account")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "201", description = "User created successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid input")
+    })
+    public ResponseEntity<UserDTO> createUser(@Valid @RequestBody UserCreateRequest request) {
+        UserDTO createdUser = adminUserService.createUser(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
+    }
+
+    @PutMapping("/{id}")
+    @Operation(summary = "Update user information", description = "Update an existing user's information")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "User updated successfully"),
+        @ApiResponse(responseCode = "404", description = "User not found"),
+        @ApiResponse(responseCode = "400", description = "Invalid input")
+    })
+    public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody UserUpdateRequest request) {
+        try {
+            User updatedUser = adminUserService.updateUser(id, request);
+            UserDTO userDTO = userMapper.toDto(updatedUser);
+            return ResponseEntity.ok(userDTO);
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            log.error("Error updating user: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Error updating user: " + e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Delete user", description = "Delete a user from the system")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "204", description = "User deleted successfully"),
+        @ApiResponse(responseCode = "404", description = "User not found")
+    })
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+        adminUserService.deleteUser(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/status")
+    @Operation(summary = "Update user status", description = "Change user status (active/inactive)")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Status updated successfully"),
+        @ApiResponse(responseCode = "404", description = "User not found")
+    })
+    public ResponseEntity<UserDTO> updateStatus(
+            @PathVariable Long id, 
+            @RequestBody Map<String, String> status) {
+        
+        boolean isActive = "ACTIVE".equalsIgnoreCase(status.get("status"));
+        return ResponseEntity.ok(isActive ? 
+                adminUserService.activateUser(id) : 
+                adminUserService.deactivateUser(id));
     }
 }

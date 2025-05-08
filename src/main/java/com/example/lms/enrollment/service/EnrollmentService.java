@@ -13,16 +13,19 @@ import com.example.lms.user.model.User;
 import com.example.lms.user.repository.UserRepository;
 import com.example.lms.course.service.CompletionVerificationService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;  // Add this import
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j  // Add this annotation to create a logger
 public class EnrollmentService {
 
     private final EnrollmentRepository enrollmentRepository;
@@ -219,5 +222,95 @@ public class EnrollmentService {
         User student = enrollment.getStudent();
         Course course = enrollment.getCourse();
         logService.logActivity(student, "COURSE_UNENROLLMENT", "Unenrolled from course: " + course.getTitle());
+    }
+    
+    /**
+     * Enroll multiple students in a course
+     */
+    @Transactional
+    public List<EnrollmentDTO> enrollMultipleStudents(Long courseId, List<Long> studentIds) {
+        List<EnrollmentDTO> results = new ArrayList<>();
+        List<String> errors = new ArrayList<>();
+        
+        for (Long studentId : studentIds) {
+            try {
+                EnrollmentDTO enrollment = enrollStudent(studentId, courseId);
+                results.add(enrollment);
+            } catch (Exception e) {
+                errors.add("Failed to enroll student ID " + studentId + ": " + e.getMessage());
+            }
+        }
+        
+        if (!errors.isEmpty()) {
+            // Log errors but continue with successful enrollments
+            log.warn("Some enrollments failed: {}", String.join(", ", errors));
+        }
+        
+        return results;
+    }
+    
+    /**
+     * Update enrollment status by ID
+     */
+    @Transactional
+    public EnrollmentDTO updateEnrollmentStatus(Long enrollmentId, String status) {
+        Enrollment enrollment = enrollmentRepository.findById(enrollmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Enrollment not found with ID: " + enrollmentId));
+        
+        // Convert frontend status to backend enum
+        EnrollmentStatus enrollmentStatus;
+        switch (status.toLowerCase()) {
+            case "active":
+                enrollmentStatus = EnrollmentStatus.APPROVED;
+                break;
+            case "inactive":
+                enrollmentStatus = EnrollmentStatus.CANCELLED;
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid status: " + status);
+        }
+        
+        enrollment.setStatus(enrollmentStatus);
+        Enrollment updated = enrollmentRepository.save(enrollment);
+        return EnrollmentMapper.toDTO(updated);
+    }
+    
+    /**
+     * Unenroll a student by enrollment ID
+     */
+    @Transactional
+    public void unenrollStudentById(Long enrollmentId) {
+        Enrollment enrollment = enrollmentRepository.findById(enrollmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Enrollment not found with ID: " + enrollmentId));
+        
+        // Only allow cancellation if the course hasn't been completed
+        if (enrollment.getStatus() == EnrollmentStatus.COMPLETED) {
+            throw new IllegalStateException("Cannot unenroll from a completed course");
+        }
+        
+        enrollment.setStatus(EnrollmentStatus.CANCELLED);
+        enrollmentRepository.save(enrollment);
+        
+        // Log the activity
+        User student = enrollment.getStudent();
+        Course course = enrollment.getCourse();
+        logService.logActivity(student, "COURSE_UNENROLLMENT", "Unenrolled from course: " + course.getTitle());
+    }
+    
+    /**
+     * Update progress by enrollment ID
+     */
+    @Transactional
+    public EnrollmentDTO updateProgressById(Long enrollmentId, Double progress, String grade) {
+        Enrollment enrollment = enrollmentRepository.findById(enrollmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Enrollment not found with ID: " + enrollmentId));
+        
+        enrollment.updateProgress(progress);
+        
+        // If grade is provided, store it in custom field or attribute
+        // Note: Your Enrollment entity doesn't have a grade field, you might need to add it
+        
+        Enrollment updated = enrollmentRepository.save(enrollment);
+        return EnrollmentMapper.toDTO(updated);
     }
 }

@@ -30,7 +30,7 @@ public class Content {
     @Enumerated(EnumType.STRING)
     private ContentType type; // VIDEO, ARTICLE, QUIZ, etc.
 
-    private int duration; // Duration in minutes (for videos/articles)
+    private Integer duration; // Duration in minutes (for videos/articles)
 
    @Column(nullable = false)
     private String title;
@@ -78,6 +78,11 @@ public class Content {
     inverseJoinColumns = @JoinColumn(name = "tag_id")
 )
 private List<Tag> tags;
+private boolean isPublished = false;
+private boolean deleted = false;
 
+public void setIsPublished(boolean isPublished) {
+    this.isPublished = isPublished;
+}
 
 }

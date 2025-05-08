@@ -65,6 +65,11 @@ public class User extends BaseEntity {
     @Column(nullable = false)
     private boolean isActive = true; // Account status flag
 
+    // Add deleted flag for soft deletion
+    @Column(nullable = false)
+    @JsonIgnore
+    private boolean deleted = false;
+
     @ManyToOne
     @JoinColumn(name = "department_id")
     private Department department; // Relationship with Department
@@ -98,5 +103,19 @@ public class User extends BaseEntity {
      */
     public String getProfileImage() {
         return this.profilePicture;
+    }
+
+    /**
+     * Checks if the user has been soft deleted
+     */
+    public boolean isDeleted() {
+        return this.deleted;
+    }
+
+    /**
+     * Sets the deleted status of the user
+     */
+    public void setDeleted(boolean deleted) {
+        this.deleted = deleted;
     }
 }
