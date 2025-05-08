@@ -4,8 +4,8 @@ import com.example.lms.enrollment.model.EnrollmentStatus;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Builder;
 import lombok.Data;
-
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Data
 @Builder
@@ -17,19 +17,18 @@ public class EnrollmentDTO {
     private String courseName;
     private EnrollmentStatus status;
     
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime enrollmentDate;
     
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime completionDate;
     
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime lastAccessedDate;
     
-    // Progress tracking
     private Double progress;
+    private String grade;
     
-    // Additional information for UI display
-    private Boolean hasPrerequisites;
-    private Boolean isCourseActive;
+    // Add this field to fix the build error
+    private Map<String, Object> user;
 }

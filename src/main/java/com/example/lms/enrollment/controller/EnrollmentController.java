@@ -1,6 +1,10 @@
 package com.example.lms.enrollment.controller;
 
 import com.example.lms.enrollment.dto.EnrollmentDTO;
+import com.example.lms.enrollment.dto.EnrollmentRequest;        // Add this
+import com.example.lms.enrollment.dto.BatchEnrollmentRequest;   // Add this
+import com.example.lms.enrollment.dto.StatusUpdateRequest;      // Add this
+import com.example.lms.enrollment.dto.ProgressUpdateRequest;    // Add this
 import com.example.lms.enrollment.service.EnrollmentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

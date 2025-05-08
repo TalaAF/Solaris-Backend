@@ -1,3 +1,18 @@
+package com.example.lms.user.controller;
+
+import com.example.lms.enrollment.repository.EnrollmentRepository;
+import com.example.lms.user.dto.UserDTO;
+import com.example.lms.user.model.User;
+import com.example.lms.security.model.Role;
+import com.example.lms.user.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
 @RestController
 @RequestMapping("/api/students")
 @RequiredArgsConstructor
@@ -33,7 +48,7 @@ public class StudentController {
             .email(user.getEmail())
             .roleNames(user.getRoles().stream()
                 .map(role -> role.getName())
-                .collect(Collectors.toList()))
+                .collect(Collectors.toSet())) // Changed from toList() to toSet()
             .build();
     }
 }

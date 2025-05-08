@@ -9,9 +9,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Repository("UserRepository")
@@ -28,4 +31,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     long countByRolesContaining(Role role);
     long countByDepartment(Department department);
     long countByCreatedAtAfter(LocalDateTime date);
+
+    // Add this method to find users by role name
+    @Query("SELECT u FROM User u JOIN u.roles r WHERE r.name = :roleName")
+    List<User> findByRoleName(@Param("roleName") String roleName);
 }

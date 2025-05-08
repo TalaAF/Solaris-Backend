@@ -13,6 +13,7 @@ import com.example.lms.user.model.User;
 import com.example.lms.user.repository.UserRepository;
 import com.example.lms.course.service.CompletionVerificationService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;  // Add this import
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j  // Add this annotation to create a logger
 public class EnrollmentService {
 
     private final EnrollmentRepository enrollmentRepository;
