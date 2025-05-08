@@ -1,24 +1,19 @@
 package com.example.lms.certificate.controller;
 
-import com.example.lms.certificate.assembler.CertificateAssembler;
 import com.example.lms.certificate.dto.CertificateDTO;
 import com.example.lms.certificate.model.Certificate;
 import com.example.lms.certificate.service.CertificateService;
-
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.tags.Tag;
-
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,14 +24,10 @@ import java.util.stream.Collectors;
  */
 @RestController
 @RequestMapping("/api/certificates")
-@Tag(name = "certificates", description = "Certificate management API")
+@RequiredArgsConstructor
 public class CertificateController {
 
-    @Autowired
-    private CertificateService certificateService;
-
-    @Autowired
-    private CertificateAssembler certificateAssembler;
+    private final CertificateService certificateService;
 
     /**
      * Generate a certificate for a student who completed a course
