@@ -4,8 +4,11 @@ import com.example.lms.certificate.dto.CertificateDTO;
 import com.example.lms.certificate.model.Certificate;
 import com.example.lms.certificate.service.CertificateService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -14,6 +17,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,6 +33,21 @@ public class CertificateController {
 
     private final CertificateService certificateService;
 
+    // Add this utility method to replace certificateAssembler
+    private CertificateDTO toDTO(Certificate certificate) {
+        return CertificateDTO.builder()
+                .id(certificate.getId())
+                .studentId(certificate.getStudentId())
+                .courseId(certificate.getCourseId())
+                .courseName(certificate.getCourseName())
+                .certificateUrl(certificate.getCertificateUrl())
+                .verificationId(certificate.getVerificationId())
+                .issuedAt(certificate.getIssuedAt())
+                .revoked(certificate.isRevoked())
+                .revocationReason(certificate.getRevocationReason())
+                .build();
+    }
+    
     /**
      * Generate a certificate for a student who completed a course
      */
@@ -39,7 +58,8 @@ public class CertificateController {
     )
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Certificate successfully generated", 
-                     content = @Content(schema = @Schema(implementation = CertificateDTO.class))),
+                     content = @Content(mediaType = "application/json", 
+                                       schema = @Schema(implementation = CertificateDTO.class))),
         @ApiResponse(responseCode = "400", description = "Bad request - invalid parameters"),
         @ApiResponse(responseCode = "404", description = "Student or course not found"),
         @ApiResponse(responseCode = "403", description = "Unauthorized access or course not completed")
@@ -49,7 +69,7 @@ public class CertificateController {
             @Parameter(description = "ID of the student") @PathVariable Long studentId,
             @Parameter(description = "ID of the course") @PathVariable Long courseId) {
         Certificate certificate = certificateService.generateCertificate(studentId, courseId);
-        return ResponseEntity.ok(certificateAssembler.toDTO(certificate));
+        return ResponseEntity.ok(toDTO(certificate)); // Use the new method
     }
 
     /**
@@ -69,7 +89,7 @@ public class CertificateController {
     public ResponseEntity<CertificateDTO> getCertificateById(
             @Parameter(description = "ID of the certificate") @PathVariable Long certificateId) {
         Certificate certificate = certificateService.getCertificateById(certificateId);
-        return ResponseEntity.ok(certificateAssembler.toDTO(certificate));
+        return ResponseEntity.ok(toDTO(certificate)); // Use the new method
     }
 
     /**
@@ -89,7 +109,7 @@ public class CertificateController {
             @Parameter(description = "ID of the student") @PathVariable Long studentId) {
         List<Certificate> certificates = certificateService.getCertificatesByStudent(studentId);
         List<CertificateDTO> certificateDTOs = certificates.stream()
-                .map(certificateAssembler::toDTO)
+                .map(this::toDTO) // Use the new method
                 .collect(Collectors.toList());
         return ResponseEntity.ok(certificateDTOs);
     }
@@ -111,7 +131,7 @@ public class CertificateController {
             @Parameter(description = "ID of the course") @PathVariable Long courseId) {
         List<Certificate> certificates = certificateService.getCertificatesByCourse(courseId);
         List<CertificateDTO> certificateDTOs = certificates.stream()
-                .map(certificateAssembler::toDTO)
+                .map(this::toDTO) // Use the new method
                 .collect(Collectors.toList());
         return ResponseEntity.ok(certificateDTOs);
     }
@@ -129,7 +149,7 @@ public class CertificateController {
     public ResponseEntity<List<CertificateDTO>> getAllCertificates() {
         List<Certificate> certificates = certificateService.getAllCertificates();
         List<CertificateDTO> certificateDTOs = certificates.stream()
-                .map(certificateAssembler::toDTO)
+                .map(this::toDTO) // Use the new method
                 .collect(Collectors.toList());
         return ResponseEntity.ok(certificateDTOs);
     }
@@ -200,7 +220,7 @@ public class CertificateController {
         List<Certificate> certificates = certificateService.generateBatchCertificates(courseId, studentIds);
         
         List<CertificateDTO> certificateDTOs = certificates.stream()
-                .map(certificateAssembler::toDTO)
+                .map(this::toDTO) // Use the new method
                 .collect(Collectors.toList());
         
         return ResponseEntity.ok(certificateDTOs);
