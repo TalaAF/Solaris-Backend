@@ -15,12 +15,16 @@ public class AuthResponse {
     // Rename accessToken to token to match frontend expectations
     private String token; 
     
+    // Add refresh token field
+    private String refreshToken;
+    
     // Replace individual user fields with a nested user object
     private UserInfo user;
     
-    // For backward compatibility, you can keep the constructor
-    public AuthResponse(String accessToken, String tokenId, Long userId, String email, String roleNames) {
+    // Update the constructor to include refreshToken
+    public AuthResponse(String accessToken, String refreshToken, String tokenId, Long userId, String email, String roleNames) {
         this.token = accessToken;
+        this.refreshToken = refreshToken;
         // Create a basic user info object
         this.user = new UserInfo();
         this.user.setId(userId);
@@ -39,10 +43,11 @@ public class AuthResponse {
         }
     }
     
-    // Add a new constructor that includes all fields
-    public AuthResponse(String accessToken, String tokenId, Long userId, String email, 
+    // Update the full constructor to include refreshToken
+    public AuthResponse(String accessToken, String refreshToken, String tokenId, Long userId, String email, 
                        String fullName, String roleNames, String profilePicture) {
         this.token = accessToken;
+        this.refreshToken = refreshToken;
         this.user = new UserInfo();
         this.user.setId(userId);
         this.user.setEmail(email);
@@ -61,6 +66,8 @@ public class AuthResponse {
             this.user.setRoles(roles);
         }
     }
+    
+    
     
     // Nested class for user information
     @Data

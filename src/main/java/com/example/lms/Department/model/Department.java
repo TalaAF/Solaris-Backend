@@ -40,6 +40,13 @@ public class Department {
 
     // For healthcare-specific functionality
     private String specialtyArea;
+     public String getSpecialtyArea() {
+        return specialtyArea;
+    }
+    
+    public void setSpecialtyArea(String specialtyArea) {
+        this.specialtyArea = specialtyArea;
+    }
     private String contactInformation;
     private boolean isActive = true;
 
