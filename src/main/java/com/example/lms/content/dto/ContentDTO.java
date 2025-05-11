@@ -1,68 +1,41 @@
 package com.example.lms.content.dto;
 
-import java.util.List;
-import java.util.Map;
-
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+import java.util.Map;
+
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class ContentDTO {
     private Long id;
     private String title;
     private String description;
-    private String filePath;
-    private String fileType;
-    private Long fileSize;
-    private String createdAt;
-    private String updatedAt;
-    private Long courseId;
-    private String courseName;
-    private Long moduleId;
-    private String moduleName;
+    private Integer duration; // Changed to Integer
     private Integer order;
-    private List<String> tags;
-    private String preview;
-    private boolean published; // Changed from isPublished to published
-    private Integer duration;
-    private String fileUrl;
-    private Map<String, String> author;
-
-    // Add this constructor to match the parameters used in the first convertToDTO method
-    public ContentDTO(
-        Long id,
-        String title, 
-        String description, 
-        String filePath, 
-        String fileType, 
-        Long fileSize, 
-        String createdAt, 
-        String updatedAt, 
-        Long courseId, 
-        String courseName, 
-        Long moduleId, 
-        String moduleName, 
-        Integer order, 
-        List<String> tags, 
-        String preview) {
-        
-        this.id = id;
-        this.title = title;
-        this.description = description;
-        this.filePath = filePath;
-        this.fileType = fileType;
-        this.fileSize = fileSize;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.courseId = courseId;
-        this.courseName = courseName;
-        this.moduleId = moduleId;
-        this.moduleName = moduleName;
-        this.order = order;
-        this.tags = tags;
-        this.preview = preview;
-    }
+    private String type;          // "document", "video", "quiz"
+    private String content;       // For document text or quiz JSON
+    private String filePath;      // For file references
+    private String videoUrl;      // For videos
+    private Long moduleId;
+    private Long courseId;
+    private Boolean isPublished;
+    
+    // Add these missing fields used in convertToDTO method
+    private String fileType;     // For file type information
+    private Long fileSize;       // For file size information
+    private String createdAt;    // Creation timestamp
+    private String updatedAt;    // Last update timestamp
+    private String courseName;   // Name of the course
+    private String moduleName;   // Name of the module
+    private List<String> tags;   // Content tags
+    private Boolean published;   // Publication status
+    private String fileUrl;      // URL to download the file
+    private Map<String, String> author; // Author information
+    private String preview;      // Content preview
 }

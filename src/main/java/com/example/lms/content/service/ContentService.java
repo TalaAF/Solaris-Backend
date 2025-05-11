@@ -2,9 +2,12 @@ package com.example.lms.content.service;
 
 import com.example.lms.common.Exception.ResourceNotFoundException;
 import com.example.lms.content.dto.ContentDTO;
+import com.example.lms.content.mapper.ContentMapper;
 import com.example.lms.content.model.Content;
 import com.example.lms.content.model.ContentAccessLog;
+import com.example.lms.content.model.ContentType;
 import com.example.lms.content.model.ContentVersion;
+import com.example.lms.content.model.Module;
 import com.example.lms.content.model.Tag;
 import com.example.lms.content.repository.ContentAccessLogRepository;
 import com.example.lms.content.repository.ContentRepository;
@@ -14,6 +17,9 @@ import com.example.lms.content.repository.TagRepository;
 import com.example.lms.course.dto.CourseDTO;
 import com.example.lms.course.model.Course;
 import com.example.lms.course.repository.CourseRepository;
+
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,7 +28,9 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.core.io.Resource;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
@@ -34,6 +42,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Service
+@Slf4j
 public class ContentService {
 
     @Autowired
@@ -170,7 +179,12 @@ public class ContentService {
     public boolean permanentlyDeleteContent(Long id) {
         return contentRepository.findById(id).map(content -> {
             // Delete the associated file from storage
-            fileStorageService.deleteFile(content.getFilePath());
+            try {
+                fileStorageService.deleteFile(content.getFilePath());
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
             // Delete content from database
             contentRepository.delete(content);
             return true;
@@ -179,49 +193,35 @@ public class ContentService {
 
 
     
-    // Convert Content to ContentDTO
+    // Convert Content to ContentDTO - modified to use only available fields
     public ContentDTO convertToDTO(Content content) {
         ContentDTO dto = new ContentDTO();
         dto.setId(content.getId());
         dto.setTitle(content.getTitle());
         dto.setDescription(content.getDescription());
         dto.setFilePath(content.getFilePath());
-        dto.setFileType(content.getFileType());
-        dto.setFileSize(content.getFileSize());
-        dto.setCreatedAt(content.getCreatedAt().toString());
-        dto.setUpdatedAt(content.getUpdatedAt().toString());
+        // Remove or comment out unsupported fields
+        // dto.setFileType(content.getFileType());
+        // dto.setFileSize(content.getFileSize());
+        // dto.setCreatedAt(content.getCreatedAt().toString());
+        // dto.setUpdatedAt(content.getUpdatedAt().toString());
         
         if (content.getCourse() != null) {
             dto.setCourseId(content.getCourse().getId());
-            dto.setCourseName(content.getCourse().getTitle());
+            // dto.setCourseName(content.getCourse().getTitle());
         }
         
         if (content.getModule() != null) {
             dto.setModuleId(content.getModule().getId());
-            dto.setModuleName(content.getModule().getTitle());
+            // dto.setModuleName(content.getModule().getTitle());
         }
         
         dto.setOrder(content.getOrder());
-        
-        if (content.getTags() != null) {
-            dto.setTags(content.getTags().stream().map(Tag::getName).collect(Collectors.toList()));
-        } else {
-            dto.setTags(Collections.emptyList());
-        }
-        
-        dto.setPublished(content.isPublished());
+        dto.setType(content.getType() != null ? content.getType().name() : null);
+        dto.setContent(content.getContent());
+        dto.setVideoUrl(content.getVideoUrl());
+        dto.setIsPublished(content.isPublished());
         dto.setDuration(content.getDuration());
-        dto.setFileUrl("/api/contents/" + content.getId() + "/download");
-        
-        // Add author information
-        if (content.getCourse() != null && content.getCourse().getInstructor() != null) {
-            Map<String, String> author = new HashMap<>();
-            author.put("id", content.getCourse().getInstructor().getId().toString());
-            author.put("name", content.getCourse().getInstructor().getFullName());
-            dto.setAuthor(author);
-        }
-        
-        dto.setPreview(generatePreview(content.getDescription(), 100));
         
         return dto;
     }
@@ -404,5 +404,56 @@ public Content updateContentDetails(Long id, String title, String description, B
     @Transactional(readOnly = true)
     public Page<ContentDTO> getDeletedContents(Pageable pageable) {
         return contentRepository.findDeleted(pageable).map(this::convertToDTO);
+    }
+
+    /**
+     * Create content from form submission
+     * 
+     * @param contentDTO Data from frontend form
+     * @param moduleId The module to add content to
+     * @param file Optional file upload
+     * @return Created content
+     */
+    @Transactional
+    public ContentDTO createContent(ContentDTO contentDTO, Long moduleId, MultipartFile file) {
+        Module module = moduleRepository.findById(moduleId)
+            .orElseThrow(() -> new ResourceNotFoundException("Module not found with id: " + moduleId));
+        
+        Content content = new Content();
+        content.setTitle(contentDTO.getTitle());
+        content.setDescription(contentDTO.getDescription());
+        content.setDuration(contentDTO.getDuration());
+        content.setOrder(contentDTO.getOrder());
+        content.setType(ContentType.valueOf(contentDTO.getType().toUpperCase()));
+        content.setModule(module);
+        content.setCourse(module.getCourse());
+        content.setIsPublished(false); // Default to unpublished
+        
+        // Handle different content types
+        switch (content.getType()) {
+            case DOCUMENT:
+                if (file != null && !file.isEmpty()) {
+                    // Handle file upload
+                    String filePath = fileStorageService.storeFile(file);
+                    content.setFilePath(filePath);
+                } else {
+                    // Store text content directly
+                    content.setContent(contentDTO.getContent());
+                }
+                break;
+                
+            case VIDEO:
+                content.setVideoUrl(contentDTO.getVideoUrl());
+                break;
+                
+            case QUIZ:
+                // Store quiz JSON
+                content.setContent(contentDTO.getContent());
+                break;
+        }
+        
+        Content savedContent = contentRepository.save(content);
+        log.info("Created new content: {} in module ID: {}", savedContent.getTitle(), moduleId);
+        return ContentMapper.toDTO(savedContent);
     }
 }

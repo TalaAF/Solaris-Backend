@@ -29,6 +29,14 @@ public interface ContentRepository extends JpaRepository<Content, Long> {
     @Query("SELECT c FROM Content c WHERE c.course.id = :courseId AND c.deleted = false")
     List<Content> findByCourseId(@Param("courseId") Long courseId);
 
+    /**
+     * Find all content items belonging to a specific module
+     * 
+     * @param moduleId The module ID
+     * @return List of content items
+     */
+    List<Content> findByModuleId(Long moduleId);
+
     @Query("SELECT c FROM Content c WHERE CONCAT(c.title, ' ', c.description) LIKE %:keyword%")
     List<Content> searchByKeyword(@Param("keyword") String keyword);
 

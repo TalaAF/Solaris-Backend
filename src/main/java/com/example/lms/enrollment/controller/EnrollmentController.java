@@ -12,7 +12,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/enrollments")
@@ -123,12 +125,32 @@ public class EnrollmentController {
     }
     
     /**
-     * Unenroll a student from a course
+     * Delete an enrollment by ID (permanent deletion)
      */
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('INSTRUCTOR')")
-    public ResponseEntity<Void> unenrollStudent(@PathVariable Long id) {
+    @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR')")
+    public ResponseEntity<Map<String, Object>> deleteEnrollment(@PathVariable Long id) {
+        boolean deleted = enrollmentService.deleteEnrollment(id);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", deleted);
+        response.put("message", "Enrollment successfully deleted");
+        
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Unenroll a student (sets status to CANCELLED but doesn't delete record)
+     */
+    @DeleteMapping("/{id}/unenroll")
+    @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR', 'STUDENT')")
+    public ResponseEntity<Map<String, Object>> unenrollStudent(@PathVariable Long id) {
         enrollmentService.unenrollStudentById(id);
-        return ResponseEntity.noContent().build();
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("message", "Student successfully unenrolled");
+        
+        return ResponseEntity.ok(response);
     }
 }

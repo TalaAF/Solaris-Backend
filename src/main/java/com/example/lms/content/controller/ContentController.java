@@ -37,6 +37,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+
 import org.springframework.core.io.Resource;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -312,5 +314,22 @@ public class ContentController {
     public ResponseEntity<Page<ContentDTO>> getDeletedContent(
             Pageable pageable) {
         return ResponseEntity.ok(contentService.getDeletedContents(pageable));
+    }
+
+    @PostMapping(value = "/modules/{moduleId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('INSTRUCTOR') or hasRole('ADMIN')")
+    @Operation(summary = "Add content to a module", description = "Create new content and add it to a module")
+    @ApiResponses({
+        @ApiResponse(responseCode = "201", description = "Content created successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid input"),
+        @ApiResponse(responseCode = "404", description = "Module not found")
+    })
+    public ResponseEntity<ContentDTO> addContentToModule(
+            @PathVariable Long moduleId,
+            @RequestPart("contentData") @Valid ContentDTO contentDTO,
+            @RequestPart(value = "file", required = false) MultipartFile file) {
+        
+        ContentDTO savedContent = contentService.createContent(contentDTO, moduleId, file);
+        return new ResponseEntity<>(savedContent, HttpStatus.CREATED);
     }
 }

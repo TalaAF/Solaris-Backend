@@ -255,24 +255,49 @@ public class EnrollmentService {
     @Transactional
     public EnrollmentDTO updateEnrollmentStatus(Long enrollmentId, String status) {
         Enrollment enrollment = enrollmentRepository.findById(enrollmentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Enrollment not found with ID: " + enrollmentId));
-        
-        // Convert frontend status to backend enum
-        EnrollmentStatus enrollmentStatus;
-        switch (status.toLowerCase()) {
-            case "active":
-                enrollmentStatus = EnrollmentStatus.APPROVED;
-                break;
-            case "inactive":
-                enrollmentStatus = EnrollmentStatus.CANCELLED;
-                break;
-            default:
-                throw new IllegalArgumentException("Invalid status: " + status);
+            .orElseThrow(() -> new ResourceNotFoundException("Enrollment not found with id: " + enrollmentId));
+    
+        // Convert frontend status to enrollment status enum
+        EnrollmentStatus newStatus;
+        if ("active".equalsIgnoreCase(status)) {
+            newStatus = EnrollmentStatus.APPROVED;
+        } else if ("inactive".equalsIgnoreCase(status)) {
+            newStatus = EnrollmentStatus.CANCELLED;
+        } else {
+            try {
+                // Try to parse as enum directly if it's not active/inactive
+                newStatus = EnrollmentStatus.valueOf(status);
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Invalid enrollment status: " + status);
+            }
         }
         
-        enrollment.setStatus(enrollmentStatus);
-        Enrollment updated = enrollmentRepository.save(enrollment);
-        return EnrollmentMapper.toDTO(updated);
+        enrollment.setStatus(newStatus);
+        enrollment = enrollmentRepository.save(enrollment);
+        
+        // Notify about status change
+        notifyStatusChange(enrollment);
+        
+        return EnrollmentMapper.toDTO(enrollment);
+    }
+    
+    /**
+     * Notify relevant parties about enrollment status changes
+     */
+    private void notifyStatusChange(Enrollment enrollment) {
+        // Optional: Send notifications about status changes
+        try {
+            // This could integrate with the notification service you already have
+            if (enrollment.getStatus() == EnrollmentStatus.APPROVED) {
+                enrollmentNotificationService.notifyEnrollment(
+                    enrollment.getStudent().getId(), 
+                    enrollment.getCourse().getId()
+                );
+            }
+        } catch (Exception e) {
+            // Log but don't fail the transaction
+            log.error("Failed to send enrollment notification", e);
+        }
     }
     
     /**
@@ -312,5 +337,100 @@ public class EnrollmentService {
         
         Enrollment updated = enrollmentRepository.save(enrollment);
         return EnrollmentMapper.toDTO(updated);
+    }
+    
+    /**
+     * Count active enrollments for a specific course
+     * @param courseId The course ID to count enrollments for
+     * @return The number of active enrollments
+     */
+    @Transactional(readOnly = true)
+    public long countActiveCourseEnrollments(Long courseId) {
+        courseRepository.findById(courseId)
+            .orElseThrow(() -> new ResourceNotFoundException("Course not found with ID: " + courseId));
+        
+        return enrollmentRepository.countByCourseIdAndStatus(courseId, EnrollmentStatus.APPROVED);
+    }
+
+    /**
+     * Count all enrollments for a course regardless of status
+     * @param courseId The course ID to count enrollments for
+     * @return The total number of enrollments
+     */
+    @Transactional(readOnly = true)
+    public long countAllEnrollments(Long courseId) {
+        courseRepository.findById(courseId)
+            .orElseThrow(() -> new ResourceNotFoundException("Course not found with ID: " + courseId));
+        
+        return enrollmentRepository.countByCourseId(courseId);
+    }
+    
+    /**
+     * Permanently delete an enrollment 
+     * 
+     * @param enrollmentId ID of the enrollment to delete
+     * @return true if deletion was successful
+     * @throws ResourceNotFoundException if enrollment doesn't exist
+     */
+    @Transactional
+    public boolean deleteEnrollment(Long enrollmentId) {
+        Enrollment enrollment = enrollmentRepository.findById(enrollmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Enrollment not found with id: " + enrollmentId));
+        
+        // Log activity before deletion
+        try {
+            // Change userActivityLogService to logService
+            logService.logActivity(
+                enrollment.getStudent(),  // Changed to pass the entire student object
+                "COURSE_UNENROLLMENT",
+                "Student unenrolled from course: " + enrollment.getCourse().getTitle()
+            );
+        } catch (Exception e) {
+            // Log but continue with deletion
+            log.error("Failed to log enrollment deletion", e);
+        }
+        
+        // Delete the enrollment
+        enrollmentRepository.delete(enrollment);
+        
+        // Return true to indicate successful deletion
+        return true;
+    }
+
+    /**
+     * Delete an enrollment by student and course IDs
+     * 
+     * @param studentId ID of the student
+     * @param courseId ID of the course
+     * @return true if deletion was successful
+     * @throws ResourceNotFoundException if enrollment doesn't exist
+     */
+    @Transactional
+    public boolean deleteEnrollmentByStudentAndCourse(Long studentId, Long courseId) {
+        Enrollment enrollment = enrollmentRepository.findByStudentIdAndCourseId(studentId, courseId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                    "Enrollment not found for student id: " + studentId + " and course id: " + courseId));
+        
+        // Get student reference before deletion
+        User student = enrollment.getStudent();
+        String courseTitle = enrollment.getCourse().getTitle();
+        
+        // Delete the enrollment
+        enrollmentRepository.delete(enrollment);
+        
+        // Log the unenrollment action
+        try {
+            // Change userActivityLogService to logService and adjust parameters
+            logService.logActivity(
+                student,
+                "COURSE_UNENROLLMENT",
+                "Student unenrolled from course: " + courseTitle
+            );
+        } catch (Exception e) {
+            // Already deleted, just log the error
+            log.error("Failed to log enrollment deletion", e);
+        }
+        
+        return true;
     }
 }
