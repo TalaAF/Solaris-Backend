@@ -9,8 +9,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -22,25 +22,27 @@ public class CertificateTemplateService {
         return templateRepository.findAll(pageable);
     }
 
+    public List<CertificateTemplate> getTemplatesBySemesterName(String semesterName) {
+        return templateRepository.findBySemesterNameContainingIgnoreCase(semesterName);
+    }
+
     public CertificateTemplate getTemplateById(Long id) {
         return templateRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Template not found with id: " + id));
-    }
-
-    public Page<CertificateTemplate> getTemplatesByCourse(Long courseId, Pageable pageable) {
-        return templateRepository.findByCourseId(courseId, pageable);
-    }
-
-    public Page<CertificateTemplate> getTemplatesByDepartment(Long departmentId, Pageable pageable) {
-        return templateRepository.findByDepartmentId(departmentId, pageable);
     }
 
     public Page<CertificateTemplate> getActiveTemplates(Pageable pageable) {
         return templateRepository.findByIsActive(true, pageable);
     }
 
+    public List<CertificateTemplate> searchTemplates(String searchTerm) {
+        return templateRepository.searchTemplates(searchTerm);
+    }
+
     @Transactional
     public CertificateTemplate createTemplate(CertificateTemplate template) {
+        template.setDateCreated(LocalDateTime.now());
+        template.setLastModified(LocalDateTime.now());
         return templateRepository.save(template);
     }
 
@@ -50,12 +52,10 @@ public class CertificateTemplateService {
         
         template.setName(templateDetails.getName());
         template.setDescription(templateDetails.getDescription());
-        template.setCourseId(templateDetails.getCourseId());
-        template.setCourseName(templateDetails.getCourseName());
-        template.setDepartmentId(templateDetails.getDepartmentId());
-        template.setDepartmentName(templateDetails.getDepartmentName());
+        template.setSemesterName(templateDetails.getSemesterName());
         template.setTemplateContent(templateDetails.getTemplateContent());
         template.setActive(templateDetails.isActive());
+        template.setLastModified(LocalDateTime.now());
         
         return templateRepository.save(template);
     }
@@ -70,10 +70,7 @@ public class CertificateTemplateService {
     public void incrementIssuedCount(Long id) {
         CertificateTemplate template = getTemplateById(id);
         template.setIssuedCount(template.getIssuedCount() + 1);
+        template.setLastModified(LocalDateTime.now());
         templateRepository.save(template);
-    }
-
-    public List<CertificateTemplate> searchTemplates(String searchTerm) {
-        return templateRepository.findByNameContainingIgnoreCase(searchTerm);
     }
 }
