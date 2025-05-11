@@ -38,18 +38,20 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RequestParam;
 import com.example.lms.content.service.ContentFileStorageService;
 
+
 @RestController
 @RequestMapping("/api/contents")
 @RequiredArgsConstructor
 @Tag(name = "Content", description = "APIs for managing course contents")
 @SecurityRequirement(name = "bearerAuth")
+@Slf4j
 public class ContentController {
 
     private final ContentService contentService;
@@ -331,5 +333,45 @@ public class ContentController {
         
         ContentDTO savedContent = contentService.createContent(contentDTO, moduleId, file);
         return new ResponseEntity<>(savedContent, HttpStatus.CREATED);
+    }
+
+    @GetMapping("/module/{moduleId}")
+    public ResponseEntity<List<ContentDTO>> getContentsByModule(@PathVariable Long moduleId) {
+        try {
+            // Add debugging
+            log.info("Fetching contents for module: {}", moduleId);
+            
+            // Use the service instead of repository directly
+            List<Content> contents = contentService.getContentsByModuleId(moduleId);
+            List<ContentDTO> contentDTOs = contents.stream()
+                .map(contentService::convertToDTO)  // Use existing conversion method
+                .collect(Collectors.toList());
+                
+            return ResponseEntity.ok(contentDTOs);
+        } catch (Exception e) {
+            log.error("Error fetching contents for module {}: {}", moduleId, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // Add this new endpoint to handle JSON requests
+    @PostMapping(value = "/modules/{moduleId}/json", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PreAuthorize("hasRole('INSTRUCTOR') or hasRole('ADMIN')")
+    @Operation(summary = "Add content to a module (JSON)", description = "Create new content using JSON format")
+    public ResponseEntity<ContentDTO> addContentToModuleJson(
+            @PathVariable Long moduleId,
+            @RequestBody ContentDTO contentDTO) {
+        
+        log.info("Received JSON request to create content for module: {}", moduleId);
+        log.debug("Content data: {}", contentDTO);
+        
+        try {
+            ContentDTO savedContent = contentService.createContent(contentDTO, moduleId, null);
+            return new ResponseEntity<>(savedContent, HttpStatus.CREATED);
+        } catch (Exception e) {
+            log.error("Error creating content via JSON endpoint: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(null);
+        }
     }
 }
