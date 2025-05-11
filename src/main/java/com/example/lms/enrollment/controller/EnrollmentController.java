@@ -65,10 +65,15 @@ public class EnrollmentController {
      * Get all enrollments for a student
      */
     @GetMapping("/student/{studentId}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('INSTRUCTOR') or @userRepository.findById(#studentId).orElse(new com.example.lms.user.model.User()).getEmail() == authentication.name")
+    @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR') or @securityService.isCurrentUser(#studentId)")
     public ResponseEntity<List<EnrollmentDTO>> getEnrollmentsForStudent(@PathVariable Long studentId) {
-        List<EnrollmentDTO> enrollments = enrollmentService.getEnrollmentsForStudent(studentId);
-        return ResponseEntity.ok(enrollments);
+        try {
+            List<EnrollmentDTO> enrollments = enrollmentService.getEnrollmentsForStudent(studentId);
+            return ResponseEntity.ok(enrollments);
+        } catch (Exception e) {
+            // Add logging
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     /**
