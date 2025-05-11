@@ -99,44 +99,55 @@ public class CourseService {
      * @throws IllegalArgumentException if validation fails
      */
     @Transactional
-@CacheEvict(value = "courses", allEntries = true)
-public CourseDTO createCourse(CourseDTO courseDTO) {
-    // Validate the fields of courseDTO
-    validateCourseDTO(courseDTO);
+    @CacheEvict(value = "courses", allEntries = true)
+    public CourseDTO createCourse(CourseDTO courseDTO) {
+        // Validate the fields of courseDTO
+        validateCourseDTO(courseDTO);
 
-    // Find the instructor by email
-    User instructor = userRepository.findByEmail(courseDTO.getInstructorEmail())
-            .orElseThrow(() -> new ResourceNotFoundException("Instructor not found with email: " + courseDTO.getInstructorEmail()));
+        // Find the instructor by email
+        User instructor = userRepository.findByEmail(courseDTO.getInstructorEmail())
+                .orElseThrow(() -> new ResourceNotFoundException("Instructor not found with email: " + courseDTO.getInstructorEmail()));
 
-    Department department = null;
-    if (courseDTO.getDepartmentId() != null) {
-        department = departmentRepository.findById(courseDTO.getDepartmentId())
-                .orElseThrow(() -> new ResourceNotFoundException("Department not found with id: " + courseDTO.getDepartmentId()));
-    }
-    
-    // Convert the DTO to entity
-    Course course = CourseMapper.toEntity(courseDTO, instructor, department);
-
-    // Process prerequisites if provided
-    if (courseDTO.getPrerequisiteCourseIds() != null && !courseDTO.getPrerequisiteCourseIds().isEmpty()) {
-        Set<Course> prerequisites = new HashSet<>();
-        for (Long prerequisiteId : courseDTO.getPrerequisiteCourseIds()) {
-            Course prerequisite = courseRepository.findById(prerequisiteId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Prerequisite course not found with id: " + prerequisiteId));
-            prerequisites.add(prerequisite);
+        Department department = null;
+        if (courseDTO.getDepartmentId() != null) {
+            department = departmentRepository.findById(courseDTO.getDepartmentId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Department not found with id: " + courseDTO.getDepartmentId()));
         }
-        course.setPrerequisites(prerequisites);
+        
+        // Convert the DTO to entity
+        Course course = CourseMapper.toEntity(courseDTO, instructor, department);
+
+        // Process prerequisites if provided
+        if (courseDTO.getPrerequisiteCourseIds() != null && !courseDTO.getPrerequisiteCourseIds().isEmpty()) {
+            Set<Course> prerequisites = new HashSet<>();
+            for (Long prerequisiteId : courseDTO.getPrerequisiteCourseIds()) {
+                Course prerequisite = courseRepository.findById(prerequisiteId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Prerequisite course not found with id: " + prerequisiteId));
+                prerequisites.add(prerequisite);
+            }
+            course.setPrerequisites(prerequisites);
+        }
+
+        // Set additional course properties that might be missing in the mapper
+        if (courseDTO.getCredits() != null) {
+            course.setCredits(courseDTO.getCredits());
+        }
+        
+        // Handle semester field (ensuring we capture it from either field name)
+        String semester = courseDTO.getSemester() != null ? courseDTO.getSemester() : courseDTO.getSemesterName();
+        if (semester != null) {
+            course.setSemester(semester);
+        }
+        
+        // Save the course entity to the repository
+        Course savedCourse = courseRepository.save(course);
+        
+        // Log the activity
+        logService.logActivity(instructor, "COURSE_CREATED", "Created course: " + course.getTitle());
+
+        // Return the saved course as DTO
+        return CourseMapper.toDTO(savedCourse);
     }
-
-    // Save the course entity to the repository
-    Course savedCourse = courseRepository.save(course);
-    
-    // Log the activity
-    logService.logActivity(instructor, "COURSE_CREATED", "Created course: " + course.getTitle());
-
-    // Return the saved course as DTO
-    return CourseMapper.toDTO(savedCourse);
-}
 
     /**
      * Update an existing course
@@ -175,6 +186,34 @@ public CourseDTO createCourse(CourseDTO courseDTO) {
             course.setMaxCapacity(courseDTO.getMaxCapacity());
         }
         
+        // Update published status - handle both field naming conventions
+        Boolean publishedStatus = null;
+        if (courseDTO.getPublished() != course.isPublished()) {
+            publishedStatus = courseDTO.getPublished();
+        } else if (courseDTO.getPublished() != course.isPublished()) {
+            publishedStatus = courseDTO.getPublished();
+        }
+        
+        if (publishedStatus != null) {
+            course.setPublished(publishedStatus);
+        }
+        
+        // Update semester field - handle both field naming conventions
+        String semester = courseDTO.getSemester() != null ? courseDTO.getSemester() : courseDTO.getSemesterName();
+        if (semester != null) {
+            course.setSemester(semester);
+        }
+        
+        // Update credits
+        if (courseDTO.getCredits() != null) {
+            course.setCredits(courseDTO.getCredits());
+        }
+        
+        // Update code if provided
+        if (courseDTO.getCode() != null) {
+            course.setCode(courseDTO.getCode());
+        }
+        
         // Set prerequisites if provided
         if (courseDTO.getPrerequisiteCourseIds() != null && !courseDTO.getPrerequisiteCourseIds().isEmpty()) {
             course.getPrerequisites().clear();
@@ -195,12 +234,6 @@ public CourseDTO createCourse(CourseDTO courseDTO) {
         return CourseMapper.toDTO(updatedCourse);
     }
 
-    /**
-     * Delete a course
-     * 
-     * @param id Course ID
-     * @throws ResourceNotFoundException if course not found
-     */
     /**
      * Soft delete a course by marking it as archived and unpublished
      *
@@ -228,10 +261,6 @@ public CourseDTO createCourse(CourseDTO courseDTO) {
 
     /**
      * Get courses by department
-     * 
-     * @param departmentId Department ID
-     * @return List of course DTOs
-     * @throws ResourceNotFoundException if department not found
      */
     @Transactional(readOnly = true)
     @Cacheable(value = "coursesByDepartment", key = "#departmentId")
@@ -247,10 +276,6 @@ public CourseDTO createCourse(CourseDTO courseDTO) {
     
     /**
      * Get courses by instructor
-     * 
-     * @param instructorId Instructor ID
-     * @return List of course DTOs
-     * @throws ResourceNotFoundException if instructor not found
      */
     @Transactional(readOnly = true)
     public List<CourseDTO> getCoursesByInstructor(Long instructorId) {
@@ -265,12 +290,6 @@ public CourseDTO createCourse(CourseDTO courseDTO) {
     
     /**
      * Add a student to a course
-     * 
-     * @param courseId Course ID
-     * @param studentId Student ID
-     * @return Updated course DTO
-     * @throws ResourceNotFoundException if course or student not found
-     * @throws IllegalStateException if course is full
      */
     @Transactional
     @CacheEvict(value = "courses", key = "#courseId")
@@ -313,11 +332,6 @@ public CourseDTO createCourse(CourseDTO courseDTO) {
     
     /**
      * Remove a student from a course
-     * 
-     * @param courseId Course ID
-     * @param studentId Student ID
-     * @return Updated course DTO
-     * @throws ResourceNotFoundException if course or student not found
      */
     @Transactional
     @CacheEvict(value = "courses", key = "#courseId")
@@ -342,10 +356,6 @@ public CourseDTO createCourse(CourseDTO courseDTO) {
     
     /**
      * Get course statistics
-     * 
-     * @param courseId Course ID
-     * @return Map of statistics
-     * @throws ResourceNotFoundException if course not found
      */
     @Transactional(readOnly = true)
     public CourseStatisticsDTO getCourseStatistics(Long courseId) {
@@ -373,64 +383,49 @@ public CourseDTO createCourse(CourseDTO courseDTO) {
     }
     
     /**
- * Get course with user-specific progress
- * 
- * @param courseId Course ID
- * @param userId User ID
- * @return Course DTO with user's progress
- * @throws ResourceNotFoundException if course not found
- */
-@Transactional(readOnly = true)
-public CourseDTO getCourseWithProgress(Long courseId, Long userId) {
-    Course course = courseRepository.findById(courseId)
-            .orElseThrow(() -> new ResourceNotFoundException("Course not found with id: " + courseId));
-            
-    CourseDTO courseDTO = CourseMapper.toDTO(course);
-    
-    // Get user's progress if userId provided
-    if (userId != null) {
-        Double progress = progressService.getProgressPercentage(userId, courseId);
-        if (progress != null) {
-            courseDTO.setProgress(progress.intValue());
+     * Get course with user-specific progress
+     */
+    @Transactional(readOnly = true)
+    public CourseDTO getCourseWithProgress(Long courseId, Long userId) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Course not found with id: " + courseId));
+                
+        CourseDTO courseDTO = CourseMapper.toDTO(course);
+        
+        // Get user's progress if userId provided
+        if (userId != null) {
+            Double progress = progressService.getProgressPercentage(userId, courseId);
+            if (progress != null) {
+                courseDTO.setProgress(progress.intValue());
+            }
         }
+        
+        return courseDTO;
     }
-    
-    return courseDTO;
-}
 
-/**
- * Get all courses with progress for a specific user
- * 
- * @param userId User ID
- * @return List of course DTOs with user's progress in each
- */
-@Transactional(readOnly = true) 
-public List<CourseDTO> getCoursesWithProgress(Long userId) {
-    List<Course> courses = courseRepository.findAll();
-    return courses.stream()
-            .map(course -> {
-                CourseDTO dto = CourseMapper.toDTO(course);
-                
-                // Get progress for this specific user and course
-                Double progress = progressService.getProgressPercentage(userId, course.getId());
-                if (progress != null) {
-                    dto.setProgress(progress.intValue());
-                }
-                
-                return dto;
-            })
-            .collect(Collectors.toList());
-}
+    /**
+     * Get all courses with progress for a specific user
+     */
+    @Transactional(readOnly = true) 
+    public List<CourseDTO> getCoursesWithProgress(Long userId) {
+        List<Course> courses = courseRepository.findAll();
+        return courses.stream()
+                .map(course -> {
+                    CourseDTO dto = CourseMapper.toDTO(course);
+                    
+                    // Get progress for this specific user and course
+                    Double progress = progressService.getProgressPercentage(userId, course.getId());
+                    if (progress != null) {
+                        dto.setProgress(progress.intValue());
+                    }
+                    
+                    return dto;
+                })
+                .collect(Collectors.toList());
+    }
     
     /**
      * Get courses with pagination and filtering
-     * 
-     * @param page Page number (0-based)
-     * @param size Page size
-     * @param sortBy Sort field
-     * @param sortDirection Sort direction (asc/desc)
-     * @param filters Filters map
-     * @return Page of course DTOs
      */
     @Transactional(readOnly = true)
     public Page<CourseDTO> getCourses(int page, int size, String sortBy, String sortDirection, Map<String, Object> filters) {
@@ -441,35 +436,78 @@ public List<CourseDTO> getCoursesWithProgress(Long userId) {
         Specification<Course> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             
-            // Filter by title
+            // Filter by title or search term
             if (filters.containsKey("title")) {
                 String title = (String) filters.get("title");
                 predicates.add(cb.like(cb.lower(root.get("title")), 
                     "%" + title.toLowerCase() + "%"));
             }
             
+            if (filters.containsKey("search")) {
+                String search = (String) filters.get("search");
+                predicates.add(
+                    cb.or(
+                        cb.like(cb.lower(root.get("title")), "%" + search.toLowerCase() + "%"),
+                        cb.like(cb.lower(root.get("description")), "%" + search.toLowerCase() + "%")
+                    )
+                );
+            }
+            
             // Filter by department
             if (filters.containsKey("departmentId")) {
-                Long departmentId = (Long) filters.get("departmentId");
-                predicates.add(cb.equal(root.get("department").get("id"), departmentId));
+                Object departmentId = filters.get("departmentId");
+                Long deptId;
+                if (departmentId instanceof String) {
+                    deptId = Long.parseLong((String) departmentId);
+                } else {
+                    deptId = (Long) departmentId;
+                }
+                predicates.add(cb.equal(root.get("department").get("id"), deptId));
             }
             
             // Filter by instructor
             if (filters.containsKey("instructorId")) {
-                Long instructorId = (Long) filters.get("instructorId");
-                predicates.add(cb.equal(root.get("instructor").get("id"), instructorId));
+                Object instructorId = filters.get("instructorId");
+                Long instId;
+                if (instructorId instanceof String) {
+                    instId = Long.parseLong((String) instructorId);
+                } else {
+                    instId = (Long) instructorId;
+                }
+                predicates.add(cb.equal(root.get("instructor").get("id"), instId));
             }
             
-            // Filter by published status
+            // Filter by instructor email
+            if (filters.containsKey("instructorEmail")) {
+                String instructorEmail = (String) filters.get("instructorEmail");
+                predicates.add(cb.equal(root.get("instructor").get("email"), instructorEmail));
+            }
+            
+            // Filter by published status - handle both field naming conventions
             if (filters.containsKey("published")) {
-                Boolean published = (Boolean) filters.get("published");
+                Boolean published = parseBoolean(filters.get("published"));
                 predicates.add(cb.equal(root.get("published"), published));
+            } else if (filters.containsKey("isPublished")) {
+                Boolean isPublished = parseBoolean(filters.get("isPublished"));
+                predicates.add(cb.equal(root.get("published"), isPublished));
             }
             
             // Filter by archived status
             if (filters.containsKey("archived")) {
-                Boolean archived = (Boolean) filters.get("archived");
+                Boolean archived = parseBoolean(filters.get("archived"));
                 predicates.add(cb.equal(root.get("archived"), archived));
+            } else if (filters.containsKey("isArchived")) {
+                Boolean isArchived = parseBoolean(filters.get("isArchived"));
+                predicates.add(cb.equal(root.get("archived"), isArchived));
+            }
+            
+            // Filter by semester
+            if (filters.containsKey("semester")) {
+                String semester = (String) filters.get("semester");
+                predicates.add(cb.equal(root.get("semester"), semester));
+            } else if (filters.containsKey("semesterName")) {
+                String semesterName = (String) filters.get("semesterName");
+                predicates.add(cb.equal(root.get("semester"), semesterName));
             }
             
             return cb.and(predicates.toArray(new Predicate[0]));
@@ -479,7 +517,15 @@ public List<CourseDTO> getCoursesWithProgress(Long userId) {
         return coursePage.map(CourseMapper::toDTO);
     }
     
-    // Private methods
+    // Helper method to parse boolean values from filters
+    private Boolean parseBoolean(Object value) {
+        if (value instanceof Boolean) {
+            return (Boolean) value;
+        } else if (value instanceof String) {
+            return Boolean.parseBoolean((String) value);
+        }
+        return false;
+    }
     
     /**
      * Validate course DTO fields
