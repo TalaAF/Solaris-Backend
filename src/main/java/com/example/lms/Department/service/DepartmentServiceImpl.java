@@ -10,6 +10,8 @@ import com.example.lms.user.model.User;
 import com.example.lms.Department.dto.DepartmentDTO.HeadDTO;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -23,6 +25,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class DepartmentServiceImpl implements DepartmentService {
     
     private final DepartmentRepository departmentRepository;
@@ -69,6 +72,9 @@ public class DepartmentServiceImpl implements DepartmentService {
     @Override
     @Transactional
     public DepartmentDTO.Response createDepartment(DepartmentDTO.Request request) {
+
+         log.debug("Creating department with request: {}", request);
+         log.debug("SpecialtyArea from request: {}", request.getSpecialtyArea());
         // Check if department with same name or code already exists
         if (departmentRepository.existsByName(request.getName())) {
             throw new ResourceAlreadyExistsException("Department with name " + request.getName() + " already exists");
@@ -82,7 +88,7 @@ public class DepartmentServiceImpl implements DepartmentService {
         department.setName(request.getName());
         department.setDescription(request.getDescription());
         department.setCode(request.getCode());
-        
+         department.setSpecialtyArea(request.getSpecialtyArea());
         // REMOVE this line as it's using the old field
         // department.setHeadOfDepartment(request.getHeadOfDepartment());
         
@@ -93,8 +99,9 @@ public class DepartmentServiceImpl implements DepartmentService {
         
         department.setContactInformation(request.getContactInformation());
         department.setActive(request.isActive());
-        
-        department = departmentRepository.save(department);
+        log.debug("Department before save: {}", department);
+    department = departmentRepository.save(department);
+    log.debug("Department after save: {}", department);
         return mapToResponseDTO(department);
     }
     
@@ -119,6 +126,7 @@ public class DepartmentServiceImpl implements DepartmentService {
         department.setName(request.getName());
         department.setDescription(request.getDescription());
         department.setCode(request.getCode());
+         department.setSpecialtyArea(request.getSpecialtyArea());
         
         // Only update head if headId is provided
         if (request.getHeadId() != null) {
@@ -148,29 +156,34 @@ public class DepartmentServiceImpl implements DepartmentService {
     }
     
     // Updated mapper method using builder pattern
-    private DepartmentDTO.Response mapToResponseDTO(Department department) {
-        DepartmentDTO.Response.ResponseBuilder builder = DepartmentDTO.Response.builder()
-                .id(department.getId())
-                .name(department.getName())
-                .description(department.getDescription())
-                .code(department.getCode())
-                .contactInformation(department.getContactInformation())
-                .active(department.isActive()) // Use isActive instead of setIsActive for the builder
-                .userCount(department.getUsers() != null ? Long.valueOf(department.getUsers().size()) : 0L)
-                .courseCount(department.getCourses() != null ? Long.valueOf(department.getCourses().size()) : 0L);
-
-        // Add head information if present
-        if (department.getHead() != null) {
-            User head = department.getHead();
-            builder.head(new DepartmentDTO.HeadDTO(
-                head.getId(),
-                head.getFullName(),
-                head.getEmail()
-            ));
-        }
-        
-        return builder.build();
+   private DepartmentDTO.Response mapToResponseDTO(Department department) {
+    DepartmentDTO.Response response = new DepartmentDTO.Response();
+    response.setId(department.getId());
+    response.setName(department.getName());
+    response.setDescription(department.getDescription());
+    response.setCode(department.getCode());
+    response.setSpecialtyArea(department.getSpecialtyArea()); // Make sure this is included
+    response.setContactInformation(department.getContactInformation());
+    response.setActive(department.isActive());
+    
+    // Add user and course counts
+    response.setUserCount(department.getUsers() != null ? 
+        Long.valueOf(department.getUsers().size()) : 0L);
+    response.setCourseCount(department.getCourses() != null ? 
+        Long.valueOf(department.getCourses().size()) : 0L);
+    
+    // Add head information if present
+    if (department.getHead() != null) {
+        User head = department.getHead();
+        response.setHead(new DepartmentDTO.HeadDTO(
+            head.getId(),
+            head.getFullName(),
+            head.getEmail()
+        ));
     }
+    
+    return response;
+}
 
     // Add this private method:
     private DepartmentDTO responseToDepartmentDTO(DepartmentDTO.Response response) {
@@ -293,11 +306,16 @@ public class DepartmentServiceImpl implements DepartmentService {
     
     @Override
     public Page<DepartmentDTO.Response> getAllDepartmentsPageableWithUserCounts(Pageable pageable) {
+        // 1. Get paginated departments
         Page<Department> departmentPage = departmentRepository.findAll(pageable);
+        
+        // 2. Get user counts for all departments in one efficient query
         Map<Long, Long> userCounts = getUserCountsForAllDepartments();
         
+        // 3. Map departments to DTOs with user counts
         return departmentPage.map(dept -> {
             DepartmentDTO.Response dto = mapToResponseDTO(dept);
+            // Add user count from our efficient query (overrides what mapToResponseDTO might have set)
             dto.setUserCount(userCounts.getOrDefault(dept.getId(), 0L));
             return dto;
         });

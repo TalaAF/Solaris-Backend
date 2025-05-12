@@ -20,9 +20,11 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j 
 public class ModuleService {
 
     @Autowired
@@ -33,6 +35,10 @@ public class ModuleService {
     
     @Autowired
     private CourseRepository courseRepository;
+    
+    // Add this line to wire in the ContentFileStorageService
+    @Autowired
+    private ContentFileStorageService contentFileStorageService;
     
     /**
      * Get all modules
@@ -132,12 +138,39 @@ public class ModuleService {
     }
 
     /**
-     * Delete a module
+     * Delete a module and all its associated content
+     * 
      * @param id Module ID
+     * @throws ResourceNotFoundException if module not found
      */
     @Transactional
     public void deleteModule(Long id) {
-        moduleRepository.deleteById(id);
+        Module module = moduleRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Module not found with id: " + id));
+        
+        // First, delete all content items associated with this module
+        List<Content> contents = contentRepository.findByModuleId(id);
+        
+        for (Content content : contents) {
+            // Delete files if any are associated with this content
+            // Using filePath instead of fileUrl based on Content class structure
+            if (content.getFilePath() != null && !content.getFilePath().isEmpty()) {
+                try {
+                    contentFileStorageService.deleteFile(content.getFilePath());
+                } catch (Exception e) {
+                    // Log but continue deleting other contents
+                    log.error("Failed to delete file for content ID {}: {}", content.getId(), e.getMessage());
+                }
+            }
+            
+            // Delete the content item
+            contentRepository.delete(content);
+        }
+        
+        // Then delete the module itself
+        moduleRepository.delete(module);
+        
+        log.info("Deleted module ID: {} with {} content items", id, contents.size());
     }
     
     /**

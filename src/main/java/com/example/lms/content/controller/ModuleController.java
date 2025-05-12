@@ -100,4 +100,20 @@ public class ModuleController {
         List<Object> contentOrder = moduleService.getContentsOrder(moduleId);
         return ResponseEntity.ok(contentOrder);
     }
+
+    /**
+     * Delete a module and all its associated content
+     */
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('INSTRUCTOR') or hasRole('ADMIN')")
+    @Operation(summary = "Delete module", description = "Delete an existing module and all its content")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Module deleted successfully"),
+        @ApiResponse(responseCode = "403", description = "Access denied"),
+        @ApiResponse(responseCode = "404", description = "Module not found")
+    })
+    public ResponseEntity<Void> deleteModule(@PathVariable Long id) {
+        moduleService.deleteModule(id);
+        return ResponseEntity.noContent().build();
+    }
 }

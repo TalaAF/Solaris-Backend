@@ -3,6 +3,7 @@ package com.example.lms.progress.service;
 import com.example.lms.common.Exception.ResourceNotFoundException;
 import com.example.lms.course.model.Course;
 import com.example.lms.course.repository.CourseRepository;
+import com.example.lms.progress.dto.DashboardDTO;
 import com.example.lms.progress.dto.ProgressDTO;
 import com.example.lms.progress.model.Progress;
 import com.example.lms.progress.repository.ProgressRepository;
@@ -87,26 +88,67 @@ public class ProgressService {
     }
 
     /**
- * Get progress percentage for a student in a course
- * 
- * @param studentId Student ID
- * @param courseId Course ID
- * @return Progress percentage (0-100) or null if no progress
- */
-@Transactional(readOnly = true)
-public Double getProgressPercentage(Long studentId, Long courseId) {
-    // Check if user and course exist
-    if (!userRepository.existsById(studentId) || !courseRepository.existsById(courseId)) {
-        return null;
+     * Get progress percentage for a student in a course
+     * 
+     * @param studentId Student ID
+     * @param courseId Course ID
+     * @return Progress percentage (0-100) or null if no progress
+     */
+    @Transactional(readOnly = true)
+    public Double getProgressPercentage(Long studentId, Long courseId) {
+        // Check if user and course exist
+        if (!userRepository.existsById(studentId) || !courseRepository.existsById(courseId)) {
+            return null;
+        }
+        
+        Optional<Progress> progress = progressRepository.findByStudentIdAndCourseId(studentId, courseId);
+        
+        // If no progress record exists, return 0
+        if (progress.isEmpty()) {
+            return 0.0;
+        }
+        
+        return progress.get().getProgress();
     }
     
-    Optional<Progress> progress = progressRepository.findByStudentIdAndCourseId(studentId, courseId);
-    
-    // If no progress record exists, return 0
-    if (progress.isEmpty()) {
-        return 0.0;
+    /**
+     * Get student dashboard with progress metrics
+     */
+    @Transactional(readOnly = true)
+    public DashboardDTO getStudentDashboard(Long studentId) {
+        // First validate student exists
+        userRepository.findById(studentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Student not found"));
+        
+        // Get all progress for student
+        List<Progress> progressList = progressRepository.findByStudentId(studentId);
+        
+        // Create dashboard
+        DashboardDTO dashboard = new DashboardDTO();
+        dashboard.setOverallProgress(calculateOverallProgress(studentId));
+        dashboard.setTotalCourses(progressList.size());
+        
+        // Count courses by status
+        int completedCourses = 0;
+        int inProgressCourses = 0;
+        int notStartedCourses = 0;
+        
+        for (Progress progress : progressList) {
+            if (progress.getProgress() >= 100.0) {
+                completedCourses++;
+            } else if (progress.getProgress() > 0.0) {
+                inProgressCourses++;
+            } else {
+                notStartedCourses++;
+            }
+        }
+        
+        dashboard.setCompletedCourses(completedCourses);
+        dashboard.setInProgressCourses(inProgressCourses);
+        dashboard.setNotStartedCourses(notStartedCourses);
+        dashboard.setLastUpdated(LocalDateTime.now());
+        dashboard.setCourseProgress(progressList.stream().map(progressAssembler::toDTO).collect(Collectors.toList()));
+        
+        return dashboard;
     }
-    
-    return progress.get().getProgress();
-}
 }

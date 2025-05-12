@@ -60,10 +60,11 @@ public class SimplifiedAuthService {
 
         // Generate JWT access token
         String jwt = tokenProvider.generateToken(authentication, request);
-
-        // Get user from repository with all relationships
         User user = userRepository.findByEmail(loginRequest.getEmail())
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+            .orElseThrow(() -> new EntityNotFoundException("User not found"));
+        // Generate refresh token 
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
+        // Get user from repository with all relationships
 
         Claims claims = tokenProvider.parseToken(jwt);
     String tokenId = claims.get("tokenId", String.class);

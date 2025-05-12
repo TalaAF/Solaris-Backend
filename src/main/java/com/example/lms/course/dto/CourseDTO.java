@@ -16,8 +16,8 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 
-// Add import for ModuleDTO
 import com.example.lms.content.dto.ModuleDTO;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * Data Transfer Object for Course entities.
@@ -56,9 +56,30 @@ public class CourseDTO extends RepresentationModel<CourseDTO> {
     // Prerequisites
     private Set<Long> prerequisiteCourseIds = new HashSet<>();
     
-    // Status flags
+    // Status flags - add JsonProperty to handle both naming conventions
+    @JsonProperty(value = "published")
     private boolean isPublished = true;
+    
+    // Allow alternative naming for published field in JSON
+    public boolean getPublished() {
+        return isPublished;
+    }
+    
+    public void setPublished(boolean published) {
+        this.isPublished = published;
+    }
+    
+    @JsonProperty(value = "archived")
     private boolean isArchived = false;
+    
+    // Allow alternative naming for archived field in JSON
+    public boolean getArchived() {
+        return isArchived;
+    }
+    
+    public void setArchived(boolean archived) {
+        this.isArchived = archived;
+    }
     
     // Dates
     private LocalDateTime startDate;
@@ -78,6 +99,29 @@ public class CourseDTO extends RepresentationModel<CourseDTO> {
     private String instructorName; // Instructor name
     private Integer progress = 0; // Student progress in course (default 0)
     private List<ModuleDTO> modules; // List of modules in the course
+    
+    // Support both the backend semester and frontend semesterName
+    private String semester;
+    private String semesterName;
+    
+    // Get semesterName if it exists, otherwise get semester
+    public String getSemester() {
+        return semesterName != null ? semesterName : semester;
+    }
+    
+    // Set both semester and semesterName to ensure compatibility
+    public void setSemester(String semester) {
+        this.semester = semester;
+        this.semesterName = semester;
+    }
+    
+    public void setSemesterName(String semesterName) {
+        this.semesterName = semesterName;
+        this.semester = semesterName;
+    }
+    
+    // Field for credits
+    private Integer credits;
     
     /**
      * Minimal constructor with essential fields

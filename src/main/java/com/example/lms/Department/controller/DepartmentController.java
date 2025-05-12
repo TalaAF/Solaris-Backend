@@ -6,6 +6,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -168,5 +170,19 @@ public class DepartmentController {
     @Operation(summary = "Remove department head", description = "Remove the current head of department")
     public ResponseEntity<DepartmentDTO.Response> removeDepartmentHead(@PathVariable Long id) {
         return ResponseEntity.ok(departmentService.removeDepartmentHead(id));
+    }
+
+    @GetMapping("/pageable/with-user-counts")
+    @Operation(summary = "Get paginated departments with user counts")
+    public ResponseEntity<Page<DepartmentDTO.Response>> getAllDepartmentsPageableWithUserCounts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "name") String sortBy,
+            @RequestParam(defaultValue = "asc") String sortDirection) {
+        
+        Sort sort = Sort.by(sortDirection.equals("asc") ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy);
+        Pageable pageable = PageRequest.of(page, size, sort);
+        
+        return ResponseEntity.ok(departmentService.getAllDepartmentsPageableWithUserCounts(pageable));
     }
 }

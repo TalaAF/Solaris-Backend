@@ -1,6 +1,5 @@
 package com.example.lms.Department.dto;
 
-import com.example.lms.user.dto.UserDTO; // Add this import
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -25,12 +24,12 @@ public class DepartmentDTO {
         
         private String description;
         private boolean active = true;
+        private String specialtyArea;
         private String contactInformation;
         
         // Add this field
         private Long headId;
-        
-        // Any other existing fields...
+        private String headOfDepartment;
     }
     
     @Data
@@ -43,11 +42,11 @@ public class DepartmentDTO {
         private String code;
         private String description;
         private boolean active;
+        private String specialtyArea;
         private String contactInformation;
         private HeadDTO head; // Department head
         private Long userCount; // Number of users in department
         private Long courseCount; // Make sure this is Long, not int
-        // other fields...
     }
     
     @Data
