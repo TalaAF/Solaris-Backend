@@ -1,49 +1,47 @@
 package com.example.lms.progress.model;
 
 import com.example.lms.content.model.Content;
-import com.example.lms.enrollment.model.Enrollment;
+import com.example.lms.user.model.User;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
-@Data
 @Entity
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 @Table(name = "content_progress")
+@Getter
+@Setter
 public class ContentProgress {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "enrollment_id", nullable = false)
-    private Enrollment enrollment; // Tracks which student is enrolled in the course
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "student_id", nullable = false)
+    private User student;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "content_id", nullable = false)
-    private Content content; // The specific content being tracked
+    private Content content;
+    
+    // Add this field to satisfy the database constraint temporarily
+    @Column(name = "enrollment_id")
+    private Long enrollmentId;
 
-    private Double progress; // e.g., percentage of video watched
-    private LocalDateTime lastUpdated; // Timestamp of when progress was last updated
+    private Double progress;
 
-    public boolean isCompleted() {
-        return this.progress != null && this.progress >= 100.0;
-    }
+    private Boolean completed;
 
-    public void updateProgress(Double newProgress) {
-        if (newProgress < 0 || newProgress > 100) {
-            throw new IllegalArgumentException("Progress must be between 0 and 100.");
-        }
-        this.progress = newProgress;
-        this.lastUpdated = LocalDateTime.now(); // Explicitly update the timestamp
-    }
+    @Column(name = "first_viewed")
+    private LocalDateTime firstViewed;
 
-    // Getter for lastUpdated (if not using @Data from Lombok, you'd need this getter)
-    public LocalDateTime getLastUpdated() {
-        return lastUpdated;
-    }
+    @Column(name = "last_viewed")
+    private LocalDateTime lastViewed;
+
+    @Column(name = "view_count")
+    private Integer viewCount;
+
+    @Column(name = "last_updated")
+    private LocalDateTime lastUpdated;
 }

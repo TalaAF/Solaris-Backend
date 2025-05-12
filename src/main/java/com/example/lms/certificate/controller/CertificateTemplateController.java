@@ -4,6 +4,7 @@ import com.example.lms.certificate.model.CertificateTemplate;
 import com.example.lms.certificate.service.CertificateTemplateService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,27 +22,21 @@ public class CertificateTemplateController {
     @GetMapping
     public ResponseEntity<Page<CertificateTemplate>> getAllTemplates(
             Pageable pageable,
-            @RequestParam(required = false) Long courseId,
-            @RequestParam(required = false) Long departmentId,
             @RequestParam(required = false) Boolean isActive,
             @RequestParam(required = false) String search) {
         
         Page<CertificateTemplate> templates;
         
-        if (courseId != null) {
-            templates = templateService.getTemplatesByCourse(courseId, pageable);
-        } else if (departmentId != null) {
-            templates = templateService.getTemplatesByDepartment(departmentId, pageable);
-        } else if (isActive != null && isActive) {
+        if (isActive != null && isActive) {
             templates = templateService.getActiveTemplates(pageable);
         } else if (search != null && !search.isEmpty()) {
             List<CertificateTemplate> searchResults = templateService.searchTemplates(search);
             // Convert list to page for consistent response
             int start = (int) pageable.getOffset();
             int end = Math.min(start + pageable.getPageSize(), searchResults.size());
-            templates = start < end 
+            templates = start >= searchResults.size() 
                 ? Page.empty(pageable)
-                : new org.springframework.data.domain.PageImpl<>(
+                : new PageImpl<>(
                     searchResults.subList(start, end), pageable, searchResults.size());
         } else {
             templates = templateService.getAllTemplates(pageable);

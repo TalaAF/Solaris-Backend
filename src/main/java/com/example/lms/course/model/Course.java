@@ -109,8 +109,6 @@ private Integer credits;
     @Column(columnDefinition = "TEXT")
     private String learningObjectives;
     
-    private Integer creditHours;
-    private String academicLevel;
     
    
 

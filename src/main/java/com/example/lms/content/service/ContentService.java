@@ -2,9 +2,12 @@ package com.example.lms.content.service;
 
 import com.example.lms.common.Exception.ResourceNotFoundException;
 import com.example.lms.content.dto.ContentDTO;
+import com.example.lms.content.mapper.ContentMapper;
 import com.example.lms.content.model.Content;
 import com.example.lms.content.model.ContentAccessLog;
+import com.example.lms.content.model.ContentType;
 import com.example.lms.content.model.ContentVersion;
+import com.example.lms.content.model.Module;
 import com.example.lms.content.model.Tag;
 import com.example.lms.content.repository.ContentAccessLogRepository;
 import com.example.lms.content.repository.ContentRepository;
@@ -14,6 +17,9 @@ import com.example.lms.content.repository.TagRepository;
 import com.example.lms.course.dto.CourseDTO;
 import com.example.lms.course.model.Course;
 import com.example.lms.course.repository.CourseRepository;
+
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,7 +28,9 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.core.io.Resource;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
@@ -32,8 +40,15 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.HashMap;
 import java.util.Map;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import com.example.lms.user.model.User;
+import com.example.lms.user.repository.UserRepository;
+import com.example.lms.content.model.ContentView;
+import com.example.lms.content.repository.ContentViewRepository;
 
 @Service
+@Slf4j
 public class ContentService {
 
     @Autowired
@@ -59,6 +74,13 @@ public class ContentService {
 
     @Autowired
      private TagRepository tagRepository;
+    
+    // Add these field declarations with your other @Autowired fields
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private ContentViewRepository contentViewRepository;
     
     // Create new content
     public Content createContent(Long courseId, MultipartFile file, String title, String description) {
@@ -118,8 +140,35 @@ public class ContentService {
 
     // Get content by ID
     @Transactional(readOnly = true)
-    public Optional<Content> getContentById(Long id) {
-        return contentRepository.findById(id);
+    public ContentDTO getContentById(Long contentId) {
+        try {
+            log.info("Fetching content {}", contentId);
+            Content content = contentRepository.findById(contentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Content not found with id: " + contentId));
+                
+            // Check if content is deleted
+            if (content.isDeleted()) {
+                throw new ResourceNotFoundException("Content has been deleted: " + contentId);
+            }
+            
+            return ContentMapper.toDTO(content);
+        } catch (Exception e) {
+            log.error("Error retrieving content {}: {}", contentId, e.getMessage(), e);
+            throw e;
+        }
+    }
+
+    /**
+     * Get content entity by ID
+     * 
+     * @param id Content ID
+     * @return Content entity
+     * @throws ResourceNotFoundException if content not found
+     */
+    @Transactional(readOnly = true)
+    public Content getContentEntityById(Long id) {
+        return contentRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Content not found with id: " + id));
     }
 
     // Get all content for a given course
@@ -170,7 +219,12 @@ public class ContentService {
     public boolean permanentlyDeleteContent(Long id) {
         return contentRepository.findById(id).map(content -> {
             // Delete the associated file from storage
-            fileStorageService.deleteFile(content.getFilePath());
+            try {
+                fileStorageService.deleteFile(content.getFilePath());
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
             // Delete content from database
             contentRepository.delete(content);
             return true;
@@ -179,49 +233,35 @@ public class ContentService {
 
 
     
-    // Convert Content to ContentDTO
+    // Convert Content to ContentDTO - modified to use only available fields
     public ContentDTO convertToDTO(Content content) {
         ContentDTO dto = new ContentDTO();
         dto.setId(content.getId());
         dto.setTitle(content.getTitle());
         dto.setDescription(content.getDescription());
         dto.setFilePath(content.getFilePath());
-        dto.setFileType(content.getFileType());
-        dto.setFileSize(content.getFileSize());
-        dto.setCreatedAt(content.getCreatedAt().toString());
-        dto.setUpdatedAt(content.getUpdatedAt().toString());
+        // Remove or comment out unsupported fields
+        // dto.setFileType(content.getFileType());
+        // dto.setFileSize(content.getFileSize());
+        // dto.setCreatedAt(content.getCreatedAt().toString());
+        // dto.setUpdatedAt(content.getUpdatedAt().toString());
         
         if (content.getCourse() != null) {
             dto.setCourseId(content.getCourse().getId());
-            dto.setCourseName(content.getCourse().getTitle());
+            // dto.setCourseName(content.getCourse().getTitle());
         }
         
         if (content.getModule() != null) {
             dto.setModuleId(content.getModule().getId());
-            dto.setModuleName(content.getModule().getTitle());
+            // dto.setModuleName(content.getModule().getTitle());
         }
         
         dto.setOrder(content.getOrder());
-        
-        if (content.getTags() != null) {
-            dto.setTags(content.getTags().stream().map(Tag::getName).collect(Collectors.toList()));
-        } else {
-            dto.setTags(Collections.emptyList());
-        }
-        
-        dto.setPublished(content.isPublished());
+        dto.setType(content.getType() != null ? content.getType().name() : null);
+        dto.setContent(content.getContent());
+        dto.setVideoUrl(content.getVideoUrl());
+        dto.setIsPublished(content.isPublished());
         dto.setDuration(content.getDuration());
-        dto.setFileUrl("/api/contents/" + content.getId() + "/download");
-        
-        // Add author information
-        if (content.getCourse() != null && content.getCourse().getInstructor() != null) {
-            Map<String, String> author = new HashMap<>();
-            author.put("id", content.getCourse().getInstructor().getId().toString());
-            author.put("name", content.getCourse().getInstructor().getFullName());
-            dto.setAuthor(author);
-        }
-        
-        dto.setPreview(generatePreview(content.getDescription(), 100));
         
         return dto;
     }
@@ -405,4 +445,167 @@ public Content updateContentDetails(Long id, String title, String description, B
     public Page<ContentDTO> getDeletedContents(Pageable pageable) {
         return contentRepository.findDeleted(pageable).map(this::convertToDTO);
     }
+
+    /**
+     * Create content from form submission
+     * 
+     * @param contentDTO Data from frontend form
+     * @param moduleId The module to add content to
+     * @param file Optional file upload
+     * @return Created content
+     */
+    @Transactional
+    public ContentDTO createContent(ContentDTO contentDTO, Long moduleId, MultipartFile file) {
+        try {
+            log.info("Creating content with data: {}, moduleId: {}", contentDTO, moduleId);
+            
+            Module module = moduleRepository.findById(moduleId)
+                .orElseThrow(() -> new ResourceNotFoundException("Module not found with id: " + moduleId));
+            
+            Content content = new Content();
+            content.setTitle(contentDTO.getTitle());
+            content.setDescription(contentDTO.getDescription());
+            content.setDuration(contentDTO.getDuration());
+            content.setOrder(contentDTO.getOrder() != null ? contentDTO.getOrder() : 0);
+            
+            // Set default values for required fields to avoid constraint violations
+            content.setFilePath("DEFAULT_PATH");
+            
+            // Fix type handling to match database expectations
+            try {
+                if (contentDTO.getType() != null) {
+                    // Convert to uppercase and use enum
+                    String typeName = contentDTO.getType().trim().toUpperCase();
+                    
+                    // Special case handling - try to match nearest enum value
+                    if (typeName.equals("DOCUMENT") || typeName.equals("DOC")) {
+                        content.setType(ContentType.DOCUMENT);
+                    } else if (typeName.equals("VIDEO") || typeName.equals("VID")) {
+                        content.setType(ContentType.VIDEO);
+                    } else if (typeName.equals("QUIZ") || typeName.equals("TEST")) {
+                        content.setType(ContentType.QUIZ);
+                    } else {
+                        // Try direct mapping to enum
+                        try {
+                            content.setType(ContentType.valueOf(typeName));
+                        } catch (IllegalArgumentException e) {
+                            // If all else fails, use a default safe value
+                            log.warn("Unknown content type: '{}', defaulting to ARTICLE", typeName);
+                            content.setType(ContentType.ARTICLE);
+                        }
+                    }
+                    
+                    // Log the final type being used
+                    log.info("Setting content type to: {}", content.getType());
+                } else {
+                    // Default type
+                    content.setType(ContentType.ARTICLE);
+                    log.info("No type specified, defaulting to ARTICLE");
+                }
+            } catch (Exception e) {
+                log.error("Error setting content type: {}", e.getMessage());
+                // Safe fallback
+                content.setType(ContentType.ARTICLE);
+            }
+            
+            content.setModule(module);
+            content.setCourse(module.getCourse());
+            content.setIsPublished(false);
+            
+            // Handle different content types with proper null handling
+            switch (content.getType()) {
+                case DOCUMENT:
+                    if (file != null && !file.isEmpty()) {
+                        String filePath = fileStorageService.storeFile(file);
+                        content.setFilePath(filePath);
+                        log.info("Stored file at: {}", filePath);
+                    } else {
+                        content.setContent(contentDTO.getContent() != null ? 
+                                      contentDTO.getContent() : "");
+                    }
+                    break;
+                    
+                case VIDEO:
+                    content.setVideoUrl(contentDTO.getVideoUrl());
+                    break;
+                    
+                case QUIZ:
+                    content.setContent(contentDTO.getContent() != null ? 
+                                  contentDTO.getContent() : "{}");
+                    break;
+                    
+                default:
+                    // Handle other types
+                    break;
+            }
+            
+            log.info("About to save content with type: {}", content.getType());
+            Content savedContent = contentRepository.save(content);
+            log.info("Content saved successfully with ID: {}", savedContent.getId());
+            
+            return ContentMapper.toDTO(savedContent);
+        } catch (Exception e) {
+            log.error("Error creating content: {}", e.getMessage(), e);
+            throw e;
+        }
+    }
+
+    // Add this method to handle getContentsByModuleId which was missing
+    @Transactional(readOnly = true)
+    public List<Content> getContentsByModuleId(Long moduleId) {
+        log.info("Getting contents for module ID: {}", moduleId);
+        
+        // First check if module exists
+        moduleRepository.findById(moduleId)
+            .orElseThrow(() -> new ResourceNotFoundException("Module not found with id: " + moduleId));
+        
+        // Get contents for this module, using a query method that matches your entity relationship
+        List<Content> contents;
+        try {
+            // Use a direct query to avoid any JPA mapping issues
+            contents = contentRepository.findByModuleId(moduleId);
+            log.info("Found {} content items for module {}", contents.size(), moduleId);
+        } catch (Exception e) {
+            log.error("Error finding content by module ID: {}", e.getMessage());
+            throw e;
+        }
+        
+        return contents;
+    }
+
+    @Transactional
+public void markContentAsViewed(Long contentId) {
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    
+    if (authentication == null || !authentication.isAuthenticated() || 
+        authentication.getPrincipal().equals("anonymousUser")) {
+        log.warn("Cannot mark content as viewed: no authenticated user");
+        return;
+    }
+    
+    try {
+        // Get current user
+        String email = authentication.getName();
+        User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
+        
+        // Mark content as viewed
+        Content content = contentRepository.findById(contentId)
+            .orElseThrow(() -> new ResourceNotFoundException("Content not found with id: " + contentId));
+        
+        // Create or update content view record
+        ContentView view = contentViewRepository.findByUserIdAndContentId(user.getId(), contentId)
+            .orElse(new ContentView());
+            
+        view.setUser(user);
+        view.setContent(content);
+        view.setViewDate(LocalDateTime.now());
+        view.setViewCount(view.getViewCount() != null ? view.getViewCount() + 1 : 1);
+        
+        contentViewRepository.save(view);
+        log.info("Content {} marked as viewed by user {}", contentId, user.getId());
+    } catch (Exception e) {
+        log.error("Error marking content as viewed: {}", e.getMessage(), e);
+    }
+}
 }

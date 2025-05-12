@@ -81,8 +81,37 @@ private List<Tag> tags;
 private boolean isPublished = false;
 private boolean deleted = false;
 
+@Column(columnDefinition = "TEXT")
+private String content;
+
+@Column
+private String videoUrl;
+
 public void setIsPublished(boolean isPublished) {
     this.isPublished = isPublished;
 }
 
+public String getContent() {
+    return content;
+}
+
+public void setContent(String content) {
+    this.content = content;
+}
+
+public String getVideoUrl() {
+    return videoUrl;
+}
+
+public void setVideoUrl(String videoUrl) {
+    this.videoUrl = videoUrl;
+}
+
+public Integer getDuration() {
+    return duration;
+}
+
+public void setDuration(Integer duration) {
+    this.duration = duration;
+}
 }

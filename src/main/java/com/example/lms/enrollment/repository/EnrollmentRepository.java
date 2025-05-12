@@ -43,4 +43,10 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
     
     // Find enrollments in a specific date range
     List<Enrollment> findByEnrollmentDateBetween(LocalDateTime startDate, LocalDateTime endDate);
+
+    // Count enrollments by course ID
+    long countByCourseId(Long courseId);
+
+    // Count enrollments by course ID and status
+    long countByCourseIdAndStatus(Long courseId, EnrollmentStatus status);
 }

@@ -4,14 +4,25 @@ import com.example.lms.certificate.model.CertificateTemplate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
 @Repository
 public interface CertificateTemplateRepository extends JpaRepository<CertificateTemplate, Long> {
-    Page<CertificateTemplate> findByCourseId(Long courseId, Pageable pageable);
-    Page<CertificateTemplate> findByDepartmentId(Long departmentId, Pageable pageable);
+    
+    // Find all active templates
     Page<CertificateTemplate> findByIsActive(boolean isActive, Pageable pageable);
-    List<CertificateTemplate> findByNameContainingIgnoreCase(String search);
+    
+    // Find by semester name
+    List<CertificateTemplate> findBySemesterNameContainingIgnoreCase(String semesterName);
+    
+    // Search by name or description
+    @Query("SELECT ct FROM CertificateTemplate ct WHERE " +
+           "LOWER(ct.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+           "LOWER(ct.description) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+           "LOWER(ct.semesterName) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+    List<CertificateTemplate> searchTemplates(@Param("searchTerm") String searchTerm);
 }

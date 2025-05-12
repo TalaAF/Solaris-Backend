@@ -29,6 +29,12 @@ public interface ContentRepository extends JpaRepository<Content, Long> {
     @Query("SELECT c FROM Content c WHERE c.course.id = :courseId AND c.deleted = false")
     List<Content> findByCourseId(@Param("courseId") Long courseId);
 
+    /**
+     * Find all contents belonging to a specific module that aren't deleted
+     */
+    @Query("SELECT c FROM Content c WHERE c.module.id = :moduleId AND c.deleted = false")
+    List<Content> findByModuleId(@Param("moduleId") Long moduleId);
+
     @Query("SELECT c FROM Content c WHERE CONCAT(c.title, ' ', c.description) LIKE %:keyword%")
     List<Content> searchByKeyword(@Param("keyword") String keyword);
 
@@ -76,4 +82,6 @@ public interface ContentRepository extends JpaRepository<Content, Long> {
     @Modifying
     @Transactional
     void restoreContent(@Param("id") Long id);
+
+    
 }
