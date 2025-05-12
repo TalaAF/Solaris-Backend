@@ -44,6 +44,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RequestParam;
 import com.example.lms.content.service.ContentFileStorageService;
+import com.example.lms.progress.service.ContentProgressService;
 
 
 @RestController
@@ -55,7 +56,8 @@ import com.example.lms.content.service.ContentFileStorageService;
 public class ContentController {
 
     private final ContentService contentService;
-    private final ContentFileStorageService fileStorageService; // Add this line
+    private final ContentFileStorageService fileStorageService;
+    private final ContentProgressService contentProgressService;
 
     @PostMapping
     @PreAuthorize("hasRole('INSTRUCTOR') or hasRole('ADMIN')")
@@ -94,23 +96,17 @@ public class ContentController {
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Get content by ID", description = "Retrieves content by its ID")
-    @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Content retrieved successfully"),
-        @ApiResponse(responseCode = "404", description = "Content not found")
-    })
     public ResponseEntity<ContentDTO> getContent(@PathVariable Long id) {
-        Content content = contentService.getContentById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Content not found with id: " + id));
-        
-        // Log access
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.isAuthenticated()) {
-            User user = (User) auth.getPrincipal();
-            contentService.logContentAccess(id, user.getId());
+        try {
+            ContentDTO content = contentService.getContentById(id);
+            return ResponseEntity.ok(content);
+        } catch (ResourceNotFoundException e) {
+            log.warn("Content not found: {}", e.getMessage());
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            log.error("Error fetching content {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
-        
-        return ResponseEntity.ok(contentService.convertToDTO(content));
     }
 
     @GetMapping("/course/{courseId}")
@@ -221,21 +217,35 @@ public class ContentController {
 
     @PostMapping("/{contentId}/mark-viewed")
     @Operation(summary = "Mark content as viewed", description = "Marks content as viewed by a user")
-    @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Content marked as viewed"),
-        @ApiResponse(responseCode = "404", description = "Content not found")
-    })
     public ResponseEntity<?> markContentAsViewed(
             @PathVariable Long contentId,
-            @RequestBody Map<String, Long> requestBody) {
+            @RequestBody(required = false) Map<String, Long> requestBody) {
         
-        Long userId = requestBody.get("userId");
-        if (userId == null) {
-            return ResponseEntity.badRequest().body(Map.of("error", "userId is required"));
+        try {
+            // Get user ID either from request body or current authentication
+            Long userId;
+            if (requestBody != null && requestBody.containsKey("userId")) {
+                userId = requestBody.get("userId");
+            } else {
+                Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+                if (auth == null || !auth.isAuthenticated()) {
+                    return ResponseEntity.status(401).body(Map.of("error", "User not authenticated"));
+                }
+                User user = (User) auth.getPrincipal();
+                userId = user.getId();
+            }
+            
+            // Log content access (existing functionality)
+            contentService.logContentAccess(contentId, userId);
+            
+            // NEW: Also update progress tracking
+            contentProgressService.recordContentView(userId, contentId);
+            
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (Exception e) {
+            log.error("Error marking content {} as viewed: {}", contentId, e.getMessage(), e);
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
         }
-        
-        contentService.logContentAccess(contentId, userId);
-        return ResponseEntity.ok(Map.of("success", true));
     }
 
     // Get paginated content list
@@ -277,22 +287,30 @@ public class ContentController {
     // Download content file
     @GetMapping("/{id}/download")
     public ResponseEntity<Resource> downloadContent(@PathVariable Long id) {
-        Content content = contentService.getContentById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Content not found with id: " + id));
-        
-        Resource resource = fileStorageService.loadFileAsResource(content.getFilePath());
-        
-        // Log access
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.isAuthenticated()) {
-            User user = (User) auth.getPrincipal();
-            contentService.logContentAccess(id, user.getId());
+        try {
+            // Get ContentDTO first
+            ContentDTO contentDTO = contentService.getContentById(id);
+            
+            // Load the file resource using the file path from DTO
+            Resource resource = fileStorageService.loadFileAsResource(contentDTO.getFilePath());
+            
+            // Log access
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null && auth.isAuthenticated()) {
+                User user = (User) auth.getPrincipal();
+                contentService.logContentAccess(id, user.getId());
+            }
+            
+            return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
+                .contentType(MediaType.parseMediaType(contentDTO.getFileType()))
+                .body(resource);
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Error downloading content {}: {}", id, e.getMessage(), e);
+            throw new RuntimeException("Could not download the file", e);
         }
-        
-        return ResponseEntity.ok()
-            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
-            .contentType(MediaType.parseMediaType(content.getFileType()))
-            .body(resource);
     }
 
     // Add these endpoints

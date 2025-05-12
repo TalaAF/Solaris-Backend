@@ -40,6 +40,12 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.HashMap;
 import java.util.Map;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import com.example.lms.user.model.User;
+import com.example.lms.user.repository.UserRepository;
+import com.example.lms.content.model.ContentView;
+import com.example.lms.content.repository.ContentViewRepository;
 
 @Service
 @Slf4j
@@ -68,6 +74,13 @@ public class ContentService {
 
     @Autowired
      private TagRepository tagRepository;
+    
+    // Add these field declarations with your other @Autowired fields
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private ContentViewRepository contentViewRepository;
     
     // Create new content
     public Content createContent(Long courseId, MultipartFile file, String title, String description) {
@@ -127,8 +140,35 @@ public class ContentService {
 
     // Get content by ID
     @Transactional(readOnly = true)
-    public Optional<Content> getContentById(Long id) {
-        return contentRepository.findById(id);
+    public ContentDTO getContentById(Long contentId) {
+        try {
+            log.info("Fetching content {}", contentId);
+            Content content = contentRepository.findById(contentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Content not found with id: " + contentId));
+                
+            // Check if content is deleted
+            if (content.isDeleted()) {
+                throw new ResourceNotFoundException("Content has been deleted: " + contentId);
+            }
+            
+            return ContentMapper.toDTO(content);
+        } catch (Exception e) {
+            log.error("Error retrieving content {}: {}", contentId, e.getMessage(), e);
+            throw e;
+        }
+    }
+
+    /**
+     * Get content entity by ID
+     * 
+     * @param id Content ID
+     * @return Content entity
+     * @throws ResourceNotFoundException if content not found
+     */
+    @Transactional(readOnly = true)
+    public Content getContentEntityById(Long id) {
+        return contentRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Content not found with id: " + id));
     }
 
     // Get all content for a given course
@@ -532,4 +572,40 @@ public Content updateContentDetails(Long id, String title, String description, B
         
         return contents;
     }
+
+    @Transactional
+public void markContentAsViewed(Long contentId) {
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    
+    if (authentication == null || !authentication.isAuthenticated() || 
+        authentication.getPrincipal().equals("anonymousUser")) {
+        log.warn("Cannot mark content as viewed: no authenticated user");
+        return;
+    }
+    
+    try {
+        // Get current user
+        String email = authentication.getName();
+        User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
+        
+        // Mark content as viewed
+        Content content = contentRepository.findById(contentId)
+            .orElseThrow(() -> new ResourceNotFoundException("Content not found with id: " + contentId));
+        
+        // Create or update content view record
+        ContentView view = contentViewRepository.findByUserIdAndContentId(user.getId(), contentId)
+            .orElse(new ContentView());
+            
+        view.setUser(user);
+        view.setContent(content);
+        view.setViewDate(LocalDateTime.now());
+        view.setViewCount(view.getViewCount() != null ? view.getViewCount() + 1 : 1);
+        
+        contentViewRepository.save(view);
+        log.info("Content {} marked as viewed by user {}", contentId, user.getId());
+    } catch (Exception e) {
+        log.error("Error marking content as viewed: {}", e.getMessage(), e);
+    }
+}
 }

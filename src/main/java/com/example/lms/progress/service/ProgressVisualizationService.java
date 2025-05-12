@@ -14,8 +14,8 @@ public class ProgressVisualizationService {
     private ContentProgressRepository contentProgressRepository;
 
     public Double calculateOverallProgress(Long studentId) {
-        // Use the correct repository method: findByEnrollmentStudentId
-        List<ContentProgress> progressList = contentProgressRepository.findByEnrollmentStudentId(studentId);
+        // Updated to use the correct repository method that matches our entity structure
+        List<ContentProgress> progressList = contentProgressRepository.findByStudent_Id(studentId);
 
         if (progressList.isEmpty()) {
             return 0.0;
