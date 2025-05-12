@@ -11,9 +11,9 @@ springdoc:
     enabled: true
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/DB5 
+    url: jdbc:postgresql://localhost:5432/TestDB 
     username: postgres
-    password: MST
+    password: A!ciRche@postG
     
 
   main:

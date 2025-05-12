@@ -1,10 +1,12 @@
-package com.example.lms.CalendarEvent.assembler;
+// src/main/java/com/example/lms/calender/assembler/CalendarEventAssembler.java
+package com.example.lms.calender.assembler;
 
-import com.example.lms.CalendarEvent.controller.CalendarController;
-import com.example.lms.CalendarEvent.DTO.CalendarEventDTO;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.RepresentationModelAssembler;
 import org.springframework.stereotype.Component;
+
+import com.example.lms.calender.DTO.CalendarEventDTO;
+import com.example.lms.calender.controller.CalendarController;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
@@ -14,7 +16,8 @@ public class CalendarEventAssembler implements RepresentationModelAssembler<Cale
     @Override
     public EntityModel<CalendarEventDTO> toModel(CalendarEventDTO entity) {
         return EntityModel.of(entity,
-                linkTo(methodOn(CalendarController.class).getDayEvents(entity.getDate())).withSelfRel(),
-                linkTo(methodOn(CalendarController.class).createEvent(entity)).withRel("create"));
+                linkTo(methodOn(CalendarController.class).getEventById(entity.getId())).withSelfRel(),
+                linkTo(methodOn(CalendarController.class).getEventsByDate(entity.getDate())).withRel("events-by-date"),
+                linkTo(methodOn(CalendarController.class).getEvents(null, null, null)).withRel("all-events"));
     }
 }
