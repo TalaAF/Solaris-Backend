@@ -235,14 +235,13 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - JWT authentication
 - Database integration
 
-### Step 2: Frontend Development (In Progress)
+### Step 2: Frontend Development (Completed)
 - React-based frontend
 - Integration with backend APIs
 - Responsive UI design
 
-### Step 3: Microservices Conversion (Upcoming)
+### Step 3: Microservices Conversion (Partially Completed)
 - Refactor into microservices
 - Service discovery
 - API gateway
 - Message queuing
-- Containerization with Docker
